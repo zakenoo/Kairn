@@ -1,0 +1,226 @@
+﻿<UserControl x:Class="Kairn.Views.LibraryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:Kairn.Views"
+             AllowDrop="True" Drop="OnDrop" DragOver="OnDragOver">
+    <Grid Margin="32,8,32,28">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="24"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ===== Catégories ===== -->
+        <DockPanel>
+            <TextBlock DockPanel.Dock="Top" Text="{l:T nav.library}" Style="{StaticResource H1}" FontSize="24" Margin="4,0,0,16"/>
+            <Button DockPanel.Dock="Bottom" Margin="0,12,0,0" Click="AddCategory_Click" HorizontalAlignment="Stretch">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,8,0"/>
+                    <TextBlock Text="{l:T lib.newCategory}"/>
+                </StackPanel>
+            </Button>
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="CategoryList"/>
+            </ScrollViewer>
+        </DockPanel>
+
+        <!-- ===== Contenu de la catégorie ===== -->
+        <Grid Grid.Column="2" x:Name="Detail">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+
+            <!-- En-tête -->
+            <DockPanel Margin="0,0,0,16">
+                <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Click="EditCategory_Click" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE70F;" FontSize="12" Margin="0,0,8,0"/>
+                        <TextBlock Text="{l:T lib.customize}"/>
+                    </StackPanel>
+                </Button>
+                <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Click="AddSubCategory_Click" VerticalAlignment="Center"
+                        ToolTip="{l:T lib.sub.add.tip}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE8F4;" FontSize="12" Margin="0,0,8,0"/>
+                        <TextBlock Text="{l:T lib.sub.add}"/>
+                    </StackPanel>
+                </Button>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="CatEmoji" FontSize="30" VerticalAlignment="Center" Margin="0,0,12,0"
+                               FontFamily="Segoe UI Emoji"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <!-- Fil d'Ariane d'une sous-catégorie : « Dessin › » cliquable -->
+                        <TextBlock x:Name="CatParents" FontSize="12" Foreground="{DynamicResource SubtleBrush}" Visibility="Collapsed"/>
+                        <TextBlock x:Name="CatName" Style="{StaticResource H1}" FontSize="24"/>
+                        <TextBlock x:Name="CatStats" Style="{StaticResource Subtle}"/>
+                    </StackPanel>
+                </StackPanel>
+            </DockPanel>
+
+            <!-- Personnalisation de la catégorie -->
+            <Border x:Name="CatEditor" Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,16" Visibility="Collapsed">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="{l:T lib.emoji}" Style="{StaticResource Label}"/>
+                            <TextBox x:Name="EdEmoji" FontFamily="Segoe UI Emoji" HorizontalContentAlignment="Center" MaxLength="4"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{l:T lib.name}" Style="{StaticResource Label}"/>
+                            <TextBox x:Name="EdName"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{l:T lib.color}" Style="{StaticResource Label}" Margin="0,14,0,6"/>
+                    <WrapPanel x:Name="EdColors"/>
+                    <TextBlock Text="{l:T lib.parent}" Style="{StaticResource Label}" Margin="0,8,0,6"/>
+                    <WrapPanel x:Name="EdParent"/>
+                    <DockPanel Margin="0,10,0,0" LastChildFill="False">
+                        <Button x:Name="DeleteCatBtn" DockPanel.Dock="Left" Style="{StaticResource Ghost}" Content="{l:T lib.deleteCategory}"
+                                Foreground="{DynamicResource DangerBrush}" Click="DeleteCategory_Click"/>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Primary}" Content="{l:T common.save}" Click="SaveCategory_Click"/>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Content="{l:T common.cancel}" Margin="0,0,8,0" Click="CancelCategory_Click"/>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Barre d'ajout -->
+            <Border Grid.Row="2" Style="{StaticResource Card}" Padding="10" Margin="0,0,0,14">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Primary}" Content="{l:T common.add}" Margin="8,0,0,0" Click="AddText_Click"/>
+                    <Button DockPanel.Dock="Right" Margin="8,0,0,0" Click="AddFiles_Click" ToolTip="{l:T lib.files.tip}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE723;" FontSize="12" Margin="0,0,8,0"/>
+                            <TextBlock Text="{l:T lib.files}"/>
+                        </StackPanel>
+                    </Button>
+                    <TextBox x:Name="AddBox" BorderThickness="0" Background="Transparent" KeyDown="AddBox_KeyDown"
+                             Tag="{l:T lib.add.ph}"/>
+                </DockPanel>
+            </Border>
+
+            <!-- Filtres -->
+            <WrapPanel Grid.Row="3" Margin="0,0,0,6">
+                <RadioButton Style="{StaticResource Chip}" GroupName="filter" Content="{l:T lib.filter.all}" Tag="" IsChecked="True" Checked="Filter_Checked"/>
+                <RadioButton Style="{StaticResource Chip}" GroupName="filter" Content="{l:T lib.filter.links}" Tag="Link" Checked="Filter_Checked"/>
+                <RadioButton Style="{StaticResource Chip}" GroupName="filter" Content="{l:T lib.filter.notes}" Tag="Note" Checked="Filter_Checked"/>
+                <RadioButton Style="{StaticResource Chip}" GroupName="filter" Content="{l:T lib.filter.images}" Tag="Image" Checked="Filter_Checked"/>
+                <RadioButton Style="{StaticResource Chip}" GroupName="filter" Content="{l:T lib.files}" Tag="File" Checked="Filter_Checked"/>
+            </WrapPanel>
+
+            <!-- Éléments -->
+            <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- Édition d'un élément -->
+                    <Border x:Name="ItemEditor" Style="{StaticResource Card}" Margin="0,0,0,14" Visibility="Collapsed"
+                            BorderBrush="{DynamicResource AccentBrush}">
+                        <StackPanel>
+                            <TextBlock Text="{l:T lib.item.title}" Style="{StaticResource Label}"/>
+                            <TextBox x:Name="ItTitle"/>
+                            <TextBlock x:Name="ItContentLabel" Text="{l:T lib.item.content}" Style="{StaticResource Label}" Margin="0,12,0,6"/>
+                            <TextBox x:Name="ItContent" VerticalContentAlignment="Top" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" MaxHeight="320"
+                                     VerticalScrollBarVisibility="Auto"/>
+                            <DockPanel Margin="0,12,0,0" LastChildFill="False">
+                                <Button x:Name="ItDelete" DockPanel.Dock="Left" Style="{StaticResource Ghost}" Content="{l:T common.delete}"
+                                        Foreground="{DynamicResource DangerBrush}" Click="ItemDelete_Click"/>
+                                <Button x:Name="ItOpen" DockPanel.Dock="Left" Style="{StaticResource Ghost}" Content="{l:T common.open}" Click="ItemOpen_Click"/>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Primary}" Content="{l:T common.save}" Click="ItemSave_Click"/>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Content="{l:T common.close}" Margin="0,0,8,0" Click="ItemClose_Click"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Sous-catégories : des dossiers à ouvrir -->
+                    <StackPanel x:Name="SubsPanel" Margin="0,4,0,8" Visibility="Collapsed">
+                        <TextBlock Text="{l:T lib.sub.title}" Style="{StaticResource Label}"/>
+                        <WrapPanel x:Name="Subs"/>
+                    </StackPanel>
+
+                    <TextBlock x:Name="EmptyText" Style="{StaticResource Subtle}" Margin="4,10,0,0" FontSize="14"
+                               Text="{l:T lib.empty}"/>
+
+                    <ItemsControl x:Name="Items">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="card" Width="214" Margin="0,0,12,12" Background="{DynamicResource ZoneRowBrush}"
+                                        BorderBrush="{DynamicResource LineBrush}" BorderThickness="{DynamicResource CardBorder}" CornerRadius="{DynamicResource Radius}"
+                                        Cursor="Hand" Tag="{Binding}" MouseLeftButtonDown="Press" MouseLeftButtonUp="Item_Click" ClipToBounds="True"
+                                        ContextMenuOpening="Item_ContextMenu" ToolTip="{l:T lib.card.tip}">
+                                    <Border.ContextMenu><ContextMenu/></Border.ContextMenu>
+                                    <Grid>
+                                    <StackPanel>
+                                        <Border x:Name="thumb" Height="140" CornerRadius="{DynamicResource Radius}" Margin="6,6,6,0"
+                                                Visibility="Collapsed">
+                                            <Border.Background>
+                                                <ImageBrush ImageSource="{Binding Converter={StaticResource Thumb}}" Stretch="UniformToFill"/>
+                                            </Border.Background>
+                                        </Border>
+                                        <StackPanel Margin="14,12,14,14">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                <TextBlock Style="{StaticResource Icon}" FontSize="12" Foreground="{DynamicResource AccentBrush}"
+                                                           Text="{Binding Kind, Converter={StaticResource ResIcon}}" Margin="0,0,8,0"/>
+                                                <TextBlock Text="{Binding Converter={StaticResource Subtitle}}" FontSize="11.5" MaxWidth="160"
+                                                           x:Name="sub" Foreground="{DynamicResource SubtleBrush}" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" MaxHeight="40"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock x:Name="noteText" Text="{Binding Converter={StaticResource Subtitle}}" Style="{StaticResource Subtle}"
+                                                       FontSize="12.5" Margin="0,6,0,0" MaxHeight="90" TextTrimming="CharacterEllipsis" Visibility="Collapsed"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <!-- Actions rapides, visibles au survol -->
+                                    <Border x:Name="actions" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,10,0"
+                                            Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource RadiusSmall}"
+                                            BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" Visibility="Collapsed">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Style="{StaticResource IconButton}" Width="28" Height="28" FontSize="12" Content="&#xE70F;"
+                                                    Tag="{Binding}" Click="ItemEdit_Click" ToolTip="{l:T lib.item.edit}"/>
+                                            <Button Style="{StaticResource IconButton}" Width="28" Height="28" FontSize="12" Content="&#xE74D;"
+                                                    Tag="{Binding}" Click="ItemQuickDelete_Click" ToolTip="{l:T lib.item.delete.tip}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    </Grid>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <Trigger SourceName="card" Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="card" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                        <Setter TargetName="actions" Property="Visibility" Value="Visible"/>
+                                    </Trigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Image">
+                                        <Setter TargetName="thumb" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Note">
+                                        <Setter TargetName="noteText" Property="Visibility" Value="Visible"/>
+                                        <Setter TargetName="sub" Property="Text" Value="{l:T lib.kind.note}"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+            <l:UndoBar x:Name="Undo" Grid.Row="4"/>
+        </Grid>
+
+        <!-- Aucune catégorie -->
+        <Border x:Name="NoCategory" Grid.Column="2" Style="{StaticResource Card}" Padding="32" VerticalAlignment="Top" Visibility="Collapsed">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="{l:T lib.first.title}" Style="{StaticResource H2}" HorizontalAlignment="Center"/>
+                <TextBlock Style="{StaticResource Subtle}" TextAlignment="Center" Margin="0,8,0,18" MaxWidth="420"
+                           Text="{l:T lib.first.sub}"/>
+                <Button Style="{StaticResource Primary}" Content="{l:T lib.newCategory}" HorizontalAlignment="Center" Click="AddCategory_Click"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

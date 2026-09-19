@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Kairn</RootNamespace>
+    <AssemblyName>Kairn</AssemblyName>
+    <ApplicationIcon>Assets\kairn.ico</ApplicationIcon>
+    <Version>0.1.0</Version>
+    <Product>Kairn</Product>
+    <SatelliteResourceLanguages>fr</SatelliteResourceLanguages>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <TieredPGO>true</TieredPGO>
+    <!-- Moins de RAM : GC de poste de travail non concurrent, pas de GC serveur -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <!-- Publication : un seul .exe, précompilé pour démarrer vite -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
+  <!-- Évite les conflits de noms entre WPF et WinForms (on n'utilise WinForms que pour l'icône de la barre des tâches) -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\kairn.ico" />
+    <!-- Traductions intégrées à l'exe : Kairn.i18n.xx.json -->
+    <EmbeddedResource Include="i18n\*.json" LogicalName="Kairn.i18n.%(Filename).json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Anthropic" Version="12.49.0" />
+    <PackageReference Include="MailKitLite" Version="4.18.0" />
+  </ItemGroup>
+
+</Project>

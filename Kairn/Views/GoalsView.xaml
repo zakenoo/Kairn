@@ -1,0 +1,146 @@
+<UserControl x:Class="Kairn.Views.GoalsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:Kairn.Views">
+    <Grid>
+        <ScrollViewer x:Name="Scroll" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="44,8,44,40" MaxWidth="860" HorizontalAlignment="Left">
+                <TextBlock Text="{l:T nav.goals}" Style="{StaticResource H1}" FontSize="24"/>
+                <TextBlock Style="{StaticResource Subtle}" Margin="0,4,0,20" TextWrapping="Wrap" Text="{l:T goal.intro}"/>
+
+                <!-- ===== Nouvel objectif ===== -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,28" BorderBrush="{DynamicResource AccentBrush}">
+                    <Grid>
+                        <!-- 1. La demande -->
+                        <StackPanel x:Name="StepForm">
+                            <TextBlock Text="{l:T goal.what}" Style="{StaticResource Label}"/>
+                            <TextBox x:Name="RequestBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="140"
+                                     VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" Tag="{l:T goal.what.ph}"/>
+
+                            <TextBlock Text="{l:T goal.when}" Style="{StaticResource Label}" Margin="0,16,0,6"/>
+                            <WrapPanel x:Name="DurationChips"/>
+
+                            <TextBlock Text="{l:T goal.days}" Style="{StaticResource Label}" Margin="0,8,0,6"/>
+                            <WrapPanel x:Name="DayChips"/>
+
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{l:T goal.moment}" Style="{StaticResource Label}" Margin="0,0,0,6"/>
+                                    <WrapPanel x:Name="WindowChips"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="{l:T goal.length}" Style="{StaticResource Label}" Margin="0,0,0,6"/>
+                                    <WrapPanel x:Name="LengthChips"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel x:Name="ModePanel" Margin="0,8,0,0">
+                                <TextBlock Text="{l:T goal.mode}" Style="{StaticResource Label}" Margin="0,0,0,6"/>
+                                <WrapPanel x:Name="ModeChips"/>
+                            </StackPanel>
+                            <TextBlock x:Name="PrivacyText" Style="{StaticResource Subtle}" FontSize="12" TextWrapping="Wrap" Margin="0,2,0,0"/>
+
+                            <!-- Rien n'est prêt : on explique où l'activer -->
+                            <Border x:Name="NotReady" Background="{DynamicResource Surface2Brush}" CornerRadius="{DynamicResource RadiusSmall}"
+                                    Padding="14,12" Margin="0,12,0,0" Visibility="Collapsed">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource Primary}" Content="{l:T goal.setup}" Click="Setup_Click" Margin="12,0,0,0"
+                                            VerticalAlignment="Center"/>
+                                    <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Text="{l:T goal.notReady}"/>
+                                </DockPanel>
+                            </Border>
+
+                            <DockPanel Margin="0,16,0,0" LastChildFill="False">
+                                <Button x:Name="GoBtn" DockPanel.Dock="Right" Style="{StaticResource Primary}" Click="Go_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE945;" FontSize="12" Margin="0,0,8,0"/>
+                                        <TextBlock Text="{l:T goal.go}"/>
+                                    </StackPanel>
+                                </Button>
+                                <TextBlock x:Name="FormError" DockPanel.Dock="Left" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center"
+                                           TextWrapping="Wrap" MaxWidth="520"/>
+                            </DockPanel>
+                        </StackPanel>
+
+                        <!-- 2. L'assistant réfléchit -->
+                        <StackPanel x:Name="StepBusy" Visibility="Collapsed" Margin="0,8">
+                            <TextBlock x:Name="BusyTitle" Style="{StaticResource H2}"/>
+                            <TextBlock x:Name="BusySub" Style="{StaticResource Subtle}" Margin="0,4,0,14" TextWrapping="Wrap"/>
+                            <ProgressBar IsIndeterminate="True" Height="4" Foreground="{DynamicResource AccentBrush}"
+                                         Background="{DynamicResource Surface2Brush}" BorderThickness="0"/>
+                            <DockPanel Margin="0,12,0,0" LastChildFill="False">
+                                <TextBlock x:Name="BusyTime" DockPanel.Dock="Left" Style="{StaticResource Subtle}" FontSize="12" VerticalAlignment="Center"/>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Content="{l:T common.cancel}" Click="Cancel_Click"/>
+                            </DockPanel>
+                        </StackPanel>
+
+                        <!-- 3. Quelques questions -->
+                        <StackPanel x:Name="StepQuestions" Visibility="Collapsed">
+                            <TextBlock x:Name="QTitle" Style="{StaticResource H2}"/>
+                            <Border x:Name="FeasBox" CornerRadius="{DynamicResource RadiusSmall}" Padding="14,10" Margin="0,10,0,4"
+                                    Background="{DynamicResource AccentSoftBrush}">
+                                <TextBlock x:Name="FeasText" TextWrapping="Wrap"/>
+                            </Border>
+                            <StackPanel x:Name="QuestionsPanel" Margin="0,8,0,0"/>
+                            <DockPanel Margin="0,12,0,0" LastChildFill="False">
+                                <Button DockPanel.Dock="Left" Style="{StaticResource Ghost}" Content="{l:T goal.back}" Click="Back_Click"/>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Primary}" Content="{l:T goal.makePlan}" Click="MakePlan_Click"/>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Content="{l:T goal.skipQuestions}" Click="SkipQuestions_Click" Margin="0,0,8,0"/>
+                            </DockPanel>
+                        </StackPanel>
+
+                        <!-- 4. Le programme, avant de l'ajouter -->
+                        <StackPanel x:Name="StepPreview" Visibility="Collapsed">
+                            <TextBlock x:Name="PTitle" Style="{StaticResource H2}" FontSize="20" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="PSummary" Style="{StaticResource Subtle}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="POrigin" FontSize="11.5" Foreground="{DynamicResource FaintBrush}" Margin="0,6,0,0"/>
+
+                            <TextBlock x:Name="RoadmapLabel" Text="{l:T goal.roadmap}" Style="{StaticResource Label}" Margin="0,16,0,6"/>
+                            <StackPanel x:Name="RoadmapPanel"/>
+
+                            <TextBlock Text="{l:T goal.sessions}" Style="{StaticResource Label}" Margin="0,16,0,6"/>
+                            <StackPanel x:Name="SessionsPanel"/>
+                            <TextBlock x:Name="UnplacedText" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,6,0,0" Visibility="Collapsed"/>
+
+                            <DockPanel Margin="0,14,0,0" LastChildFill="False">
+                                <Button DockPanel.Dock="Left" Style="{StaticResource Ghost}" Content="{l:T goal.restart}" Click="Restart_Click"/>
+                                <Button x:Name="AddBtn" DockPanel.Dock="Right" Style="{StaticResource Primary}" Click="Add_Click"/>
+                            </DockPanel>
+                        </StackPanel>
+
+                        <!-- 5. C'est dans le calendrier -->
+                        <StackPanel x:Name="StepDone" Visibility="Collapsed" Margin="0,4">
+                            <TextBlock x:Name="DoneTitle" Style="{StaticResource H2}"/>
+                            <TextBlock Style="{StaticResource Subtle}" Margin="0,4,0,14" TextWrapping="Wrap" Text="{l:T goal.done.sub}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource Primary}" Content="{l:T goal.done.see}" Click="SeePlanning_Click"/>
+                                <Button Style="{StaticResource Ghost}" Content="{l:T goal.done.another}" Margin="8,0,0,0" Click="Restart_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Erreur -->
+                        <StackPanel x:Name="StepError" Visibility="Collapsed">
+                            <TextBlock Text="{l:T goal.err.title}" Style="{StaticResource H2}"/>
+                            <TextBlock x:Name="ErrorText" Style="{StaticResource Subtle}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="ErrorDetail" FontSize="11.5" Foreground="{DynamicResource FaintBrush}" Margin="0,6,0,12" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource Primary}" Content="{l:T goal.err.retry}" Click="Retry_Click"/>
+                                <Button Style="{StaticResource Ghost}" Content="{l:T goal.back}" Margin="8,0,0,0" Click="Back_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- ===== Mes objectifs ===== -->
+                <TextBlock x:Name="MineLabel" Text="{l:T goal.mine}" Style="{StaticResource Label}"/>
+                <StackPanel x:Name="GoalList"/>
+            </StackPanel>
+        </ScrollViewer>
+        <l:UndoBar x:Name="Undo"/>
+    </Grid>
+</UserControl>
