@@ -1,63 +1,243 @@
+<div align="center">
+
+<img src="docs/icon.png" width="96" alt="Kairn icon">
+
 # Kairn
 
-> *Kairos*, dieu grec du moment opportun, et *cairn*, le petit tas de pierres qui balise un sentier : des repères pour ta journée, posés au bon moment.
+**A calm, local-first day planner for Windows, made for minds that wander.**
 
-Un planning de journée pour Windows, léger et 100 % local, qui s'ouvre au démarrage du PC, affiche ce que tu as prévu heure par heure et t'aide à ne pas te disperser.
+Your day hour by hour, a work rhythm that suits you, a gentle guard against distractions,
+and an assistant that turns “I want to learn this” into real sessions in your calendar.
+No account. No cloud. Nothing leaves your PC unless you decide so.
 
-- **Aujourd'hui** : **Mes outils** (tes apps de travail en un clic : dessin, Excel, Canva…), tes **mails** (masqués pendant les blocs de travail, sauf le nombre de non lus), ou simplement un bouton qui ouvre ta messagerie dans le navigateur si tu préfères ne pas donner de mot de passe et la tâche en cours avec un compte à rebours, la suivante et les cases à cocher. La progression prend la forme d'un cairn qui gagne une pierre à chaque tâche accomplie, avec le temps de travail du jour et de la semaine. On voit ce qui est fait, jamais un pourcentage de ce qui manque.
-- **Report automatique** : une tâche de travail non terminée passe à ta prochaine session dans « À reprendre ». Le bouton « Reporter la suite » le fait à tout moment, et « Planifier » lui redonne un horaire.
-- **Rythme de travail (Pomodoro & co)** : une tâche longue se découpe toute seule en sessions et pauses (Pomodoro 25/5 avec une grande pause toutes les 4 sessions, Petits pas 15/5, 50/10, 90/20 ou perso). Rien à planifier à la main : le rythme se choisit dans la tâche, s'écrit dans le programme collé (`14h - 16h Faire mon CV #pomodoro`, `#50/10`), ou s'applique automatiquement à toutes les tâches longues (Réglages). La carte « En cours » montre la session et le compte à rebours jusqu'à la pause. Un petit bandeau (avec un son léger, désactivable) annonce la pause et la reprise. Le garde se repose pendant les pauses, et seul le temps de travail compte dans ton cumul.
-- **Planning** : un calendrier mensuel. Chaque tâche peut avoir des **liens à ouvrir** (Canva, une vidéo YouTube, un fichier, un de tes outils) : un bouton apparaît quand c'est l'heure, avec l'option de les ouvrir automatiquement. Tu ajoutes des tâches sur une plage horaire, ou tu **colles un programme en texte libre** (`9h30 Réviser`, `12h00 - 13h00 : Repas`, sous-puces = notes…) avec un aperçu en direct.
-- **Objectifs (assistant)** : « j'aimerais savoir dessiner des personnages, j'ai 2 mois, le soir en semaine ». L'assistant pose 2-3 questions si besoin, fait une feuille de route en phases et détaille les deux prochaines semaines en séances concrètes (consignes pas à pas + tutos). Kairn place ensuite les séances **sans IA** dans tes créneaux vraiment libres (dates toujours justes), tu relis et tu valides. Les ressources vont dans la Bibliothèque (une catégorie par objectif, une sous-catégorie par phase). « Préparer la suite » construit les deux semaines suivantes selon ce que tu as fait et ton ressenti (trop facile / trop dur).
-  - **Local (par défaut)** : modèle intégré Qwen3 4B (Apache 2.0) via llama.cpp, téléchargé une seule fois (~2,6 Go) depuis Réglages, sur la carte graphique si possible. Il ne tourne que pendant une demande puis libère la mémoire. Ollama et LM Studio sont aussi pris en charge.
-  - **En ligne (facultatif)** : avec ta propre clé d'API (Claude, ou un service compatible OpenAI), programmes plus précis et vraies ressources trouvées sur le web.
-- **Bibliothèque** : des catégories (ex. « Dessin ») où ranger liens Pinterest et YouTube, notes, images et fichiers. Les fichiers sont copiés en local. Une tâche liée à une catégorie affiche ses ressources pendant qu'elle est en cours.
-- **Garde anti-distraction** (onglet Garde) : un catalogue de ~30 apps courantes (Discord, WhatsApp, Steam, Epic, Riot, Spotify, navigateurs…) où Kairn repère celles installées sur le PC avec leur icône. Un clic suffit pour en surveiller une. Tu peux aussi ajouter n'importe quel programme (fenêtres ouvertes ou fichier .exe), et activer « Jeux en plein écran » pour les jeux lancés depuis un launcher. Trois modes :
-  - *Doux* : un bandeau rappelle la tâche en cours si l'app passe au premier plan.
-  - *Fermeture* : l'app est fermée au début de chaque bloc de travail.
-  - *Strict* : l'app est refermée dès qu'elle se relance pendant un bloc. Il faut attendre 10 s pour quitter ce mode.
-  - Les pauses ne sont jamais surveillées. Le menu de la barre des tâches propose « Pause du garde 15 min ».
-- **Import / export .ics** (Apple Calendrier, Google Agenda, Outlook).
-- **Apparence entièrement modifiable** : 12 thèmes préfaits (Kairn, le noir d'encre par défaut, Pierre & sable, Papier, Néon, Haut contraste…), les 12 couleurs de l'interface avec un sélecteur complet (teinte, saturation, transparence), une **image de fond pour chaque bloc** (fond de l'app, barre latérale, carte « En cours », cartes, lignes de tâches…) avec un voile réglable pour garder le texte lisible, l'opacité de chaque bloc, n'importe quelle police installée, la taille de l'interface, les arrondis et les bordures. Tes thèmes s'enregistrent, et s'exportent en `.kairntheme` (couleurs + images) pour les partager.
+[**Download for Windows**](https://github.com/zakenoo/Kairn/releases/latest) · [Privacy](#privacy) · [FAQ](#faq) · [Support on Ko-fi](https://ko-fi.com/zakenoo)
 
-## Confidentialité
+![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0b0b0b?style=flat-square)
+![Local first](https://img.shields.io/badge/data-100%25%20local-0b0b0b?style=flat-square)
+![12 languages](https://img.shields.io/badge/languages-12-0b0b0b?style=flat-square)
+![.NET 10](https://img.shields.io/badge/.NET-10-0b0b0b?style=flat-square)
 
-Aucun compte, aucune télémétrie. Les connexions réseau sont toutes facultatives et déclenchées par toi : ta messagerie (IMAP), directement de ton PC à ton serveur mail, avec un mot de passe chiffré par Windows (DPAPI) ; le téléchargement unique du modèle local (GitHub ggml-org/llama.cpp et Hugging Face, fichiers vérifiés par empreinte SHA-256) ; et le mode en ligne de l'assistant, qui n'envoie que ton objectif et tes réponses au fournisseur choisi, jamais ton calendrier ni tes notes (clé d'API chiffrée par DPAPI). Les données sont dans `%AppData%\Kairn` (`data.json`, `settings.json`, `library\`).
-**Mode portable** : crée un dossier `data` à côté de `Kairn.exe` et l'app y rangera tout.
+<img src="docs/screenshots/today.png" alt="Kairn's Today view" width="900">
 
-## Installer
+</div>
 
-Télécharge `Kairn-Setup-x.y.z.exe` dans les [Releases](https://github.com/zakenoo/Kairn/releases) et lance-le : choix de la langue, de l'ambiance (appliquée en direct), de ton prénom et de quelques réglages, puis Kairn s'installe dans `%LocalAppData%\Programs\Kairn`, sans droits administrateur. Tout est prêt au premier lancement. La désinstallation se fait depuis Paramètres Windows → Applications, et tes données sont gardées sauf si tu demandes à les supprimer.
+## Why Kairn
 
-Windows peut afficher « Windows a protégé votre ordinateur » au premier lancement (l'exe n'est pas signé) : clique sur **Informations complémentaires → Exécuter quand même**.
+Kairos was the Greek god of the right moment; a cairn is the small pile of stones that marks a trail. Kairn is both: landmarks for your day, placed at the right time.
 
-**Mises à jour** : si tu l'as accepté pendant l'installation, Kairn demande une fois par jour à GitHub s'il existe une version plus récente (rien d'autre n'est envoyé) et affiche un bouton « Mettre à jour » : il télécharge le nouveau setup, vérifie son empreinte, remplace Kairn et le relance, en gardant tes données.
+It was built for people who find it hard to start, to stay on track, or to forgive themselves when a day doesn't go to plan, including people with ADHD. A few principles shape everything:
 
-## Publier une nouvelle version
+- **No guilt.** There's no percentage of what you *didn't* do. Progress is a cairn that gains a stone for every finished task, plus the time you actually worked.
+- **Nothing is lost.** An unfinished task isn't a failure: it moves to your next work session, in “To pick up”.
+- **Starting is the hard part.** Every plan begins with an easy first step, long tasks are cut into short sessions, and the next action is always in plain sight.
+- **Your data is yours.** Everything is stored as plain files on your PC. No account, no telemetry, no ads.
+
+## Features
+
+### Today
+The task in progress with a live countdown, what comes next, and your whole day at a glance. Links attached to a task (a Figma file, a YouTube tutorial, a document) get a one-click button when it's time, and can even open by themselves. Your work tools sit on the side, and your mail can stay out of sight during work blocks.
+
+### Planner
+A monthly calendar where you add tasks on time slots, or **paste a whole schedule as plain text**: `9:30 Study`, `12:00 - 13:00 Lunch`, `2pm Write CV #pomodoro`. Indented lines become notes, lines without a time become section titles, and you get a live preview before anything is added. Import and export `.ics` files for Apple, Google or Outlook calendars.
+
+<img src="docs/screenshots/planner.png" alt="Planner" width="900">
+
+### Work rhythm (Pomodoro & co)
+Long tasks split themselves into sessions and breaks, with no manual planning: Pomodoro 25/5 (with a long break every four sessions), Small steps 15/5, Focused 50/10, Deep work 90/20, or your own. Pick it per task, add `#pomodoro` or `#50/10` to a pasted line, or apply it automatically to every long task. A discreet banner (with an optional soft sound) announces each break and each restart, and the guard rests during breaks.
+
+### Goals, with an assistant
+Write what you want to achieve and how long you have, for example “run 5 km without stopping, 8 weeks, mornings”. The assistant asks two or three questions if needed, writes a roadmap in phases, and details the next two weeks as concrete sessions with step-by-step instructions and tutorial links.
+
+**Kairn then places those sessions itself, without AI, in the slots that are actually free in your calendar**, so dates are always right and nothing overlaps. You review everything, untick what you don't want, and only then add it. When the two weeks are almost over, “Prepare what's next” builds the following ones from what you did and how it felt (too easy, just right, too hard).
+
+<img src="docs/screenshots/goals.png" alt="A program generated by the local assistant" width="900">
+
+The assistant runs **on your PC** by default (see [the local model](#the-local-ai-model)). You can also connect your own API key for Claude or an OpenAI-compatible service, for more precise plans and real resources found on the web.
+
+### Library
+Categories and subcategories (Drawing › Anatomy…) to keep links, notes, images and files together. Files are copied locally and stored in folders named after your categories. A task linked to a category shows its resources while you work on it. Paste a screenshot with Ctrl+V, drag and drop files, delete with one click and undo if you change your mind.
+
+<img src="docs/screenshots/library.png" alt="Library" width="900">
+
+### Guard
+Pick what distracts you (Discord, Steam, games in fullscreen, a browser…) from a catalog of about thirty common apps, detected automatically on your PC, or add any program. Then choose how Kairn reacts during work blocks:
+
+| Mode | What happens |
+|---|---|
+| **Gentle** | A small banner reminds you of the task in progress. Nothing is closed. |
+| **Close** | Distracting apps are closed at the start of each work block. You can reopen them. |
+| **Strict** | They are closed again as soon as they reopen during a block. |
+
+The guard never acts during breaks or outside your schedule, and “Pause 15 min” is always one click away.
+
+<img src="docs/screenshots/guard.png" alt="Guard" width="900">
+
+### Appearance
+Twelve ready-made themes, and everything is editable: all twelve interface colors, a background image for any block (with an adjustable veil to keep text readable), fonts, size, corners and borders. Even the taskbar icon follows your colors. Save your themes and share them as `.kairntheme` files.
+
+<img src="docs/screenshots/appearance.png" alt="Appearance" width="900">
+
+### Everything else
+- **12 languages**: English, 中文, हिन्दी, Español, Français, العربية (mirrored right-to-left interface), বাংলা, Português, Русский, 日本語, Deutsch, Bahasa Indonesia. Dates, days and durations follow your language.
+- **Mail**: read your inbox (IMAP) inside Kairn, or simply get a button that opens your webmail in the browser. During work blocks, only the unread count is shown.
+- **Starts with Windows** (optional), lives quietly in the notification area.
+
+## Install
+
+1. Download **`Kairn-Setup-x.y.z.exe`** from the [latest release](https://github.com/zakenoo/Kairn/releases/latest).
+2. Run it: pick your language, your look (the setup takes on its colors live), your first name and a few options.
+3. That's it: Kairn opens ready to use.
+
+<p align="center">
+  <img src="docs/screenshots/setup-welcome.png" alt="Setup: welcome" width="440">
+  <img src="docs/screenshots/setup-look.png" alt="Setup: pick your look" width="440">
+</p>
+
+**Requirements:** Windows 10 or 11, 64-bit. About 100 MB of disk space. Nothing else to install: the setup contains everything Kairn needs.
+
+**No administrator rights needed.** Kairn installs in `%LocalAppData%\Programs\Kairn`, adds a Start menu shortcut, and, only if you ask for it, a desktop shortcut and a launch at Windows startup.
+
+> **“Windows protected your PC”?** Kairn isn't signed with a paid code-signing certificate yet, so Windows SmartScreen warns about it the first time. Click **More info → Run anyway**. If you'd rather not trust a binary, you can [build Kairn from source](#build-from-source) in two commands.
+
+**Uninstall** from *Settings → Apps → Kairn*, like any app. It removes the program, its shortcuts and its startup entry. Your data is kept unless you tick “Also delete my data”, so a reinstall picks up exactly where you left off.
+
+**Portable mode:** create a folder named `data` next to `Kairn.exe`, and Kairn keeps everything in it instead of your user profile, handy for a USB stick.
+
+## Updates
+
+If you allow it (it's an option in the setup and in Settings), Kairn asks GitHub once a day whether a newer version exists. When one does, a card appears in the sidebar: one click downloads the new setup, **checks its SHA-256 fingerprint against the one published by GitHub**, replaces Kairn and restarts it. Your tasks and settings are untouched.
+
+If you'd rather not, leave the option off and use **Settings → Updates → Check now** whenever you like.
+
+## Privacy
+
+Kairn has **no account, no telemetry, no analytics, no crash reporting and no ads.** It works fully offline. Here is every single way it can talk to the internet. Each one is optional and triggered by you:
+
+| Connection | When | What is sent | To whom |
+|---|---|---|---|
+| **Your mailbox** | Only if you connect one | Your login, over an encrypted connection, to read your mail | Your mail provider (Gmail, iCloud…) |
+| **Local AI model download** | Once, when you click *Install* in Settings | Nothing about you: a plain file download | GitHub (llama.cpp engine) and Hugging Face (model) |
+| **Online AI mode** | Only if you add an API key *and* choose “Online” for a goal | Your goal and your answers to the assistant's questions. **Never your calendar, notes, library or mail.** | The provider you configured (Anthropic, OpenAI…) |
+| **Update check** | Only if enabled, once a day, or when you click *Check now* | A standard request asking for the latest version number | GitHub |
+| **Links you open** | When you click one | A normal visit in your browser | That website |
+
+**Where your data lives:** `%AppData%\Kairn`, as readable JSON files (`data.json`, `settings.json`) plus a `library` folder for your files. Back it up or move it to another PC by copying that folder.
+
+**Secrets are encrypted.** Your mail password and API key are encrypted with Windows DPAPI: only your Windows account, on this PC, can decrypt them. (It also means you'll re-enter them after moving to a new PC.)
+
+**What the guard can see:** during work blocks only, it reads the name of the app in the foreground every two seconds (for example `Discord`), compares it with your list, and that's it. Nothing is logged, stored or sent. It only closes apps in the Close and Strict modes that you choose, and never touches fullscreen apps other than showing a reminder.
+
+**What goes into Windows:** a Start menu shortcut, an entry in *Apps* for uninstalling, and, if you enabled it, a startup entry in your user's `Run` registry key. Nothing system-wide, nothing that needs admin rights.
+
+## The local AI model
+
+The assistant works fully offline with a small open model, installed on demand from *Settings → Goal assistant → Install*:
+
+- **Model:** [Qwen3 4B Instruct](https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF) (Apache 2.0 license), about 2.5 GB, run by [llama.cpp](https://github.com/ggml-org/llama.cpp). Both files are verified by SHA-256 after download, and an interrupted download resumes where it stopped.
+- **Only while it works:** the engine starts when you ask for a plan, listens on `127.0.0.1` only (unreachable from your network), and shuts down three minutes after your last request. It never runs in the background, and it's stopped automatically if Kairn closes or crashes.
+- **Graphics card if possible:** on a recent GPU, a full program takes about 15–30 seconds; on the processor alone, count one or two minutes. You can turn the GPU off in Settings.
+- **Honest expectations:** a 4-billion-parameter model is great at breaking a goal into a sensible progression, but it can be generic, and may get details wrong for specific software. That's why every session links to a tutorial, and why the online mode exists for more precise plans.
+- **Already use Ollama or LM Studio?** Pick it in Settings and Kairn uses the models you already have, with nothing to download.
+
+## FAQ
+
+<details>
+<summary><b>Is Kairn free?</b></summary>
+
+Yes. No trial, no premium tier, no ads. If it helps you, you can [buy me a coffee on Ko-fi](https://ko-fi.com/zakenoo). That's entirely optional.
+</details>
+
+<details>
+<summary><b>Does it need an internet connection?</b></summary>
+
+No. Everything works offline. Only the optional features listed in [Privacy](#privacy) use the network, and only when you use them.
+</details>
+
+<details>
+<summary><b>Will it slow down my PC or my games?</b></summary>
+
+Kairn uses around 100–170 MB of RAM and well under 1% of the processor while it sits in the background. The guard only reads one process name every two seconds, during work blocks. The local AI model never runs in the background: it only starts while it's generating a plan, then frees its memory.
+</details>
+
+<details>
+<summary><b>Does the AI see my calendar or my notes?</b></summary>
+
+No. In local mode nothing leaves your PC anyway. In online mode, only your goal and your answers to the assistant's questions are sent. Placing the sessions in your calendar is done by Kairn itself, locally, without AI.
+</details>
+
+<details>
+<summary><b>Can I use my ChatGPT Plus or Claude Pro subscription instead of an API key?</b></summary>
+
+No. Those subscriptions only work in the official apps, and connecting them to third-party apps isn't allowed by their providers. The online mode needs an API key (billed separately, per use). The local mode is free and needs neither.
+</details>
+
+<details>
+<summary><b>Why is the download around 100 MB?</b></summary>
+
+The setup includes the .NET runtime, so you don't have to install anything else. Kairn itself is small.
+</details>
+
+<details>
+<summary><b>Why does Windows or my antivirus warn me?</b></summary>
+
+Because the executable isn't signed with a paid code-signing certificate. The code is public: you can read it, and [build it yourself](#build-from-source) if you prefer.
+</details>
+
+<details>
+<summary><b>Can I import my Google, Apple or Outlook calendar?</b></summary>
+
+Yes, through `.ics` files (Planner → Import / Export). It's a one-time import, not a live sync: Kairn never connects to your calendar accounts.
+</details>
+
+<details>
+<summary><b>What happens to a task I didn't finish?</b></summary>
+
+It moves to your next work session, in “To pick up”, without an hour. Give it a time slot when you're ready, or tick it off when it's done. Nothing piles up as red marks.
+</details>
+
+<details>
+<summary><b>How do I back up my data or move to another PC?</b></summary>
+
+Copy the `%AppData%\Kairn` folder (or your `data` folder in portable mode). On the new PC, install Kairn and put the folder back. You'll need to re-enter your mail password and API key, which are encrypted for your Windows account only.
+</details>
+
+<details>
+<summary><b>Is there a Mac or Linux version?</b></summary>
+
+Not at the moment: Kairn is a native Windows app (WPF). It keeps it light and well integrated with Windows.
+</details>
+
+<details>
+<summary><b>I found a bug or a translation mistake.</b></summary>
+
+Please [open an issue](https://github.com/zakenoo/Kairn/issues). For translations, you can also fix them yourself without recompiling (see [Translations](#translations)).
+</details>
+
+## Build from source
+
+You need the [.NET 10 SDK](https://dotnet.microsoft.com/download) on Windows.
 
 ```powershell
-.\publish.ps1 1.0.1
+git clone https://github.com/zakenoo/Kairn.git
+cd Kairn
+dotnet run --project Kairn -c Release
 ```
 
-Le script met la version à jour dans `Kairn.csproj` et crée `release\Kairn-Setup-1.0.1.exe`. Ensuite : commit + push, puis sur GitHub **Releases → Draft a new release**, tag `v1.0.1`, joins le fichier et publie. Les Kairn installés le verront tout seuls (le dépôt doit être public pour que la vérification fonctionne).
+To produce the setup (a single self-contained file in `release\`):
 
-## Compiler
-
-Prérequis : [SDK .NET 10](https://dotnet.microsoft.com/download).
-
-```bash
-dotnet publish Kairn -c Release -o dist
+```powershell
+.\publish.ps1            # current version
+.\publish.ps1 1.2.0      # bump the version, then build
 ```
 
-Tu obtiens `dist/Kairn.exe`, un seul fichier d'environ 0,5 Mo qui nécessite le runtime .NET 10 Desktop.
-Pour un exe autonome qui n'a besoin de rien d'installé (~70 Mo) : ajoute `--self-contained true`.
+The setup is Kairn itself: the same executable opens in install mode when its name starts with `Kairn-Setup`. Publishing an update means creating a GitHub release tagged `v1.2.0` with that file attached. Installed copies that allow update checks will offer it on their own.
 
-## Langues
+## Translations
 
-Kairn est traduit en 12 langues : English, 中文（简体）, हिन्दी, Español, Français, العربية (interface en miroir, de droite à gauche), বাংলা, Português, Русский, 日本語, Deutsch, Bahasa Indonesia. Au premier lancement, il prend la langue de Windows. Tu peux la changer dans Réglages, en direct.
+All interface texts live in [`Kairn/i18n`](Kairn/i18n), one JSON file per language, with `fr.json` as the reference. To fix a translation or add a language **without recompiling**, open *Settings → Open the language folder*: it contains a README and a complete template. Drop an `xx.json` file there and restart Kairn. Missing keys fall back to English.
 
-Les dates, les jours et les durées suivent la langue choisie. Le collage de programme comprend aussi le format `2pm` / `9:30am` et reconnaît les pauses dans plusieurs langues (« lunch », « pausa », « 休息 »…).
+Pull requests with translation fixes from native speakers are very welcome.
 
-**Contribuer une traduction** : les textes sont dans `Kairn/i18n/*.json`, une clé par texte, avec `fr.json` comme référence. Pour corriger une langue ou en ajouter une sans recompiler, dépose un fichier `xx.json` dans le dossier `lang` des données (Réglages → Ouvrir le dossier des langues). Une nouvelle langue a besoin de `"_name"` (nom affiché), `"_culture"` (ex. `"it-IT"`) et, si elle s'écrit de droite à gauche, `"_rtl": "true"`. Les clés absentes retombent sur l'anglais.
+## Support
 
-**Captures** : `Kairn.exe --snapshot <dossier> [langue]` enregistre une image de chaque page, puis quitte.
+Kairn is free and made on my own time. If it makes your days a bit calmer, you can support it on **[Ko-fi](https://ko-fi.com/zakenoo)** ☕, star the repository, or simply tell someone who might need it.

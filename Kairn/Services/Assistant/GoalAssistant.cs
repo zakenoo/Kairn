@@ -245,7 +245,8 @@ public static class GoalAssistant
             {
                 Title = CleanTitle(s["title"]?.GetValue<string>() ?? ""),
                 Minutes = Math.Clamp(s["minutes"]?.GetValue<int>() ?? g.SessionMinutes, 10, g.SessionMinutes),
-                Instructions = s["instructions"]?.GetValue<string>()?.Trim() ?? "",
+                // « 1. … 2. … » sur une seule ligne : une étape par ligne, plus facile à suivre.
+                Instructions = System.Text.RegularExpressions.Regex.Replace(s["instructions"]?.GetValue<string>()?.Trim() ?? "", @"\s+(?=\d+[.)]\s)", "\n"),
                 Phase = Math.Max(0, s["phase"]?.GetValue<int>() ?? 0),
             };
             if (session.Title.Length == 0) continue;

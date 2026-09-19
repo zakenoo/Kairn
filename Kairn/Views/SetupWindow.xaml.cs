@@ -428,6 +428,7 @@ public partial class SetupWindow : Window
     /// <summary>« KAIRN_SETUP_SNAPSHOT=dossier » : enregistre une image de chaque écran, sans rien installer.</summary>
     internal async Task SnapshotAsync(string dir)
     {
+        if (Environment.GetEnvironmentVariable("KAIRN_SNAPSHOT_LANG") is { Length: > 0 } lang) { Loc.Instance.Load(lang); BuildLanguages(); GoWelcome(); }
         System.IO.Directory.CreateDirectory(dir);
         async Task Shot(string name)
         {

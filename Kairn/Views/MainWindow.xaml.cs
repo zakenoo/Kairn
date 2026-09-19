@@ -47,8 +47,11 @@ public partial class MainWindow : Window
         RefreshGuard();
     }
 
+    private bool _syncingNav;
+
     private void Nav_Checked(object sender, RoutedEventArgs e)
     {
+        if (_syncingNav) return;
         if (sender is RadioButton { Tag: string key }) Navigate(key);
     }
 
@@ -72,8 +75,13 @@ public partial class MainWindow : Window
         (view as IRefreshable)?.Refresh();
         if (view is PlanningView pe && edit != null) pe.EditTask(edit, schedule: true);
         Host.Content = view;
-        if (key == "planning" && date != null)
-            foreach (var rb in FindNav()) rb.IsChecked = (string)rb.Tag == "planning";
+        // Le menu de gauche suit toujours la page affichée (y compris quand on y arrive par un lien ou un bouton).
+        if (!_syncingNav)
+        {
+            _syncingNav = true;
+            foreach (var rb in FindNav()) rb.IsChecked = (string)rb.Tag == key;
+            _syncingNav = false;
+        }
     }
 
     private IEnumerable<RadioButton> FindNav() =>
