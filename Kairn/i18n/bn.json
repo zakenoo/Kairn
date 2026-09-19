@@ -600,6 +600,9 @@
   "set.updates.version": "সংস্করণ {0}",
   "set.updates.check": "এখনই দেখুন",
   "set.updates.upToDate": "আপনার কাছে সর্বশেষ সংস্করণ আছে।",
-  "set.updates.found": "সংস্করণ {0} পাওয়া যাচ্ছে: বোতামটি বাঁ দিকের বারে।",
-  "set.updates.error": "এখন যাচাই করা যাচ্ছে না।"
+  "set.updates.found": "সংস্করণ {0} পাওয়া যাচ্ছে।",
+  "set.updates.error": "এখন যাচাই করা যাচ্ছে না।",
+  "side.source": "সোর্স কোড",
+  "side.source.tip": "GitHub-এ Kairn-এর কোড দেখুন",
+  "side.kofi.tip": "Ko-fi-তে এক কাপ কফি দিয়ে Kairn-কে সমর্থন করুন"
 }

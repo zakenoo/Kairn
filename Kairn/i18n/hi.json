@@ -600,6 +600,9 @@
   "set.updates.version": "संस्करण {0}",
   "set.updates.check": "अभी जाँचें",
   "set.updates.upToDate": "आपके पास नवीनतम संस्करण है।",
-  "set.updates.found": "संस्करण {0} उपलब्ध है: बटन बाईं पट्टी में है।",
-  "set.updates.error": "अभी जाँच नहीं हो सकती।"
+  "set.updates.found": "संस्करण {0} उपलब्ध है।",
+  "set.updates.error": "अभी जाँच नहीं हो सकती।",
+  "side.source": "सोर्स कोड",
+  "side.source.tip": "GitHub पर Kairn का कोड देखें",
+  "side.kofi.tip": "Ko-fi पर एक कॉफ़ी से Kairn का साथ दें"
 }

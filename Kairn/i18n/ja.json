@@ -600,6 +600,9 @@
   "set.updates.version": "バージョン {0}",
   "set.updates.check": "今すぐ確認",
   "set.updates.upToDate": "最新バージョンです。",
-  "set.updates.found": "バージョン {0} が利用できます。ボタンは左のバーにあります。",
-  "set.updates.error": "今は確認できません。"
+  "set.updates.found": "バージョン {0} が利用できます。",
+  "set.updates.error": "今は確認できません。",
+  "side.source": "ソースコード",
+  "side.source.tip": "GitHub で Kairn のコードを見る",
+  "side.kofi.tip": "Ko-fi でコーヒーを贈って Kairn を応援"
 }

@@ -600,6 +600,9 @@
   "set.updates.version": "Version {0}",
   "set.updates.check": "Check now",
   "set.updates.upToDate": "You have the latest version.",
-  "set.updates.found": "Version {0} is available: the button is in the left bar.",
-  "set.updates.error": "Can't check right now."
+  "set.updates.found": "Version {0} is available.",
+  "set.updates.error": "Can't check right now.",
+  "side.source": "Source code",
+  "side.source.tip": "See Kairn's code on GitHub",
+  "side.kofi.tip": "Support Kairn with a coffee on Ko-fi"
 }

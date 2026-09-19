@@ -600,6 +600,9 @@
   "set.updates.version": "Versão {0}",
   "set.updates.check": "Verificar agora",
   "set.updates.upToDate": "Você tem a versão mais recente.",
-  "set.updates.found": "A versão {0} está disponível: o botão está na barra à esquerda.",
-  "set.updates.error": "Não é possível verificar agora."
+  "set.updates.found": "A versão {0} está disponível.",
+  "set.updates.error": "Não é possível verificar agora.",
+  "side.source": "Código-fonte",
+  "side.source.tip": "Ver o código do Kairn no GitHub",
+  "side.kofi.tip": "Apoie o Kairn com um café no Ko-fi"
 }

@@ -79,6 +79,15 @@ public partial class MainWindow : Window
     private IEnumerable<RadioButton> FindNav() =>
         LogicalTreeHelper.GetChildren(NavToday.Parent).OfType<RadioButton>();
 
+    // ===================== Liens =====================
+
+    private void Source_Click(object sender, RoutedEventArgs e) => Launcher.Open("https://github.com/" + Updater.Repo);
+
+    private void Kofi_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (Click.Up(sender)) Launcher.Open("https://ko-fi.com/zakenoo");
+    }
+
     // ===================== Mise à jour =====================
 
     private void RefreshUpdate()

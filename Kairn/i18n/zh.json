@@ -600,6 +600,9 @@
   "set.updates.version": "版本 {0}",
   "set.updates.check": "立即检查",
   "set.updates.upToDate": "已是最新版本。",
-  "set.updates.found": "{0} 版已推出：按钮在左侧栏。",
-  "set.updates.error": "暂时无法检查。"
+  "set.updates.found": "{0} 版已推出。",
+  "set.updates.error": "暂时无法检查。",
+  "side.source": "源代码",
+  "side.source.tip": "在 GitHub 上查看 Kairn 的代码",
+  "side.kofi.tip": "在 Ko-fi 上请 Kairn 喝杯咖啡"
 }

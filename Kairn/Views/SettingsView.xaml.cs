@@ -117,7 +117,29 @@ public partial class SettingsView : UserControl, IRefreshable
     {
         VersionLabel.Text = L.F("set.updates.version", Installer.VersionText(Installer.CurrentVersion));
         UpdatesSwitch.IsChecked = S.CheckUpdates;
-        UpdateStatus.Text = Updater.Available is { } u ? L.F("set.updates.found", Installer.VersionText(u.Version)) : "";
+        ShowUpdate(Updater.Available, silentIfNone: true);
+    }
+
+    private void ShowUpdate(Updater.Update? u, bool silentIfNone)
+    {
+        UpdateStatus.Text = u is not null ? L.F("set.updates.found", Installer.VersionText(u.Version)) : silentIfNone ? "" : L.T("set.updates.upToDate");
+        InstallUpdateBtn.Visibility = u is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private async void InstallUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        if (Updater.Available is not { } u) return;
+        InstallUpdateBtn.IsEnabled = false;
+        try
+        {
+            await Updater.DownloadAndApplyAsync(u, new Progress<double>(f => UpdateStatus.Text = L.F("update.downloading", (int)(f * 100))), CancellationToken.None);
+            App.Current.Quit(); // le setup remplace Kairn puis le relance
+        }
+        catch
+        {
+            UpdateStatus.Text = L.T("update.failed");
+            InstallUpdateBtn.IsEnabled = true;
+        }
     }
 
     private async void CheckUpdates_Click(object sender, RoutedEventArgs e)
@@ -125,8 +147,7 @@ public partial class SettingsView : UserControl, IRefreshable
         UpdateStatus.Text = "…";
         try
         {
-            var u = await Updater.CheckAsync(manual: true);
-            UpdateStatus.Text = u is null ? L.T("set.updates.upToDate") : L.F("set.updates.found", Installer.VersionText(u.Version));
+            ShowUpdate(await Updater.CheckAsync(manual: true), silentIfNone: false);
         }
         catch { UpdateStatus.Text = L.T("set.updates.error"); }
     }

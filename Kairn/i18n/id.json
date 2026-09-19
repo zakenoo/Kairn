@@ -600,6 +600,9 @@
   "set.updates.version": "Versi {0}",
   "set.updates.check": "Periksa sekarang",
   "set.updates.upToDate": "Kamu sudah memakai versi terbaru.",
-  "set.updates.found": "Versi {0} tersedia: tombolnya ada di bilah kiri.",
-  "set.updates.error": "Tidak bisa memeriksa sekarang."
+  "set.updates.found": "Versi {0} tersedia.",
+  "set.updates.error": "Tidak bisa memeriksa sekarang.",
+  "side.source": "Kode sumber",
+  "side.source.tip": "Lihat kode Kairn di GitHub",
+  "side.kofi.tip": "Dukung Kairn dengan secangkir kopi di Ko-fi"
 }

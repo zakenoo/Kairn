@@ -600,6 +600,9 @@
   "set.updates.version": "الإصدار {0}",
   "set.updates.check": "التحقق الآن",
   "set.updates.upToDate": "لديك أحدث إصدار.",
-  "set.updates.found": "الإصدار {0} متاح: الزر في الشريط الجانبي.",
-  "set.updates.error": "تعذّر التحقق الآن."
+  "set.updates.found": "الإصدار {0} متاح.",
+  "set.updates.error": "تعذّر التحقق الآن.",
+  "side.source": "الشيفرة المصدرية",
+  "side.source.tip": "عرض شيفرة Kairn على GitHub",
+  "side.kofi.tip": "ادعم Kairn بفنجان قهوة على Ko-fi"
 }

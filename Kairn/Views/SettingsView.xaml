@@ -128,6 +128,8 @@
                 <StackPanel>
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Content="{l:T set.updates.check}" Click="CheckUpdates_Click" VerticalAlignment="Center"/>
+                        <Button x:Name="InstallUpdateBtn" DockPanel.Dock="Right" Style="{StaticResource Primary}" Content="{l:T update.install}"
+                                Click="InstallUpdate_Click" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="Collapsed"/>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock x:Name="VersionLabel" FontWeight="SemiBold"/>
                             <TextBlock x:Name="UpdateStatus" Style="{StaticResource Subtle}" FontSize="12" Margin="0,3,0,0"/>

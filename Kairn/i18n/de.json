@@ -600,6 +600,9 @@
   "set.updates.version": "Version {0}",
   "set.updates.check": "Jetzt prüfen",
   "set.updates.upToDate": "Du hast die neueste Version.",
-  "set.updates.found": "Version {0} ist verfügbar: Der Knopf ist in der linken Leiste.",
-  "set.updates.error": "Prüfen gerade nicht möglich."
+  "set.updates.found": "Version {0} ist verfügbar.",
+  "set.updates.error": "Prüfen gerade nicht möglich.",
+  "side.source": "Quellcode",
+  "side.source.tip": "Kairns Code auf GitHub ansehen",
+  "side.kofi.tip": "Kairn mit einem Kaffee auf Ko-fi unterstützen"
 }
