@@ -5,3 +5,4 @@ dist/
 *.user
 data/
 *.log
+release/
