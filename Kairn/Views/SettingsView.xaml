@@ -122,6 +122,23 @@
                 </StackPanel>
             </Border>
 
+            <!-- ===== Mises à jour ===== -->
+            <TextBlock Text="{l:T set.updates}" Style="{StaticResource Label}"/>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="{l:T set.updates.check}" Click="CheckUpdates_Click" VerticalAlignment="Center"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="VersionLabel" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="UpdateStatus" Style="{StaticResource Subtle}" FontSize="12" Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,14"/>
+                    <CheckBox x:Name="UpdatesSwitch" Style="{StaticResource Switch}" HorizontalAlignment="Left" Content="{l:T setup.prefs.updates}" Click="UpdatesSwitch_Click"/>
+                    <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,4,0,0" Text="{l:T setup.prefs.updates.sub}"/>
+                </StackPanel>
+            </Border>
+
             <!-- ===== Système ===== -->
             <TextBlock Text="{l:T set.system}" Style="{StaticResource Label}"/>
             <Border Style="{StaticResource Card}" Margin="0,0,0,24">

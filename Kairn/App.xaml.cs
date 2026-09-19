@@ -23,6 +23,14 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // Setup, mise à jour ou désinstallation : le même exe, sans l'app elle-même.
+        if (Installer.IsSetupMode(e.Args) || e.Args.Contains(Installer.UninstallArg) || e.Args.Contains(Installer.UpdateArg))
+        {
+            base.OnStartup(e);
+            RunSetup(e.Args);
+            return;
+        }
+
         // Une seule instance : si l'app tourne déjà, on lui demande juste de s'afficher.
         _mutex = new Mutex(true, InstanceName, out bool first);
         if (!first)
@@ -65,6 +73,8 @@ public partial class App : Application
         Guard.RhythmChanged += NudgeWindow.ShowRhythm;
         Guard.Start();
 
+        if (Storage.Settings.CheckUpdates) Updater.StartAutoCheck();
+
         MainWin = new MainWindow();
         MainWin.Show();
 
@@ -74,6 +84,22 @@ public partial class App : Application
         if (snap >= 0 && snap + 1 < e.Args.Length)
             Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle,
                 () => Snapshots(e.Args[snap + 1], snap + 2 < e.Args.Length ? e.Args[snap + 2] : null));
+    }
+
+    private void RunSetup(string[] args)
+    {
+        Storage.Load();
+        Loc.Instance.Load(Storage.Settings.Language ?? Loc.SystemDefault());
+        ThemeService.Apply(Storage.Settings.Theme);
+        int u = Array.IndexOf(args, Installer.UpdateArg);
+        var window = u >= 0 && u + 2 < args.Length && int.TryParse(args[u + 1], out var pid)
+            ? new SetupWindow(SetupWindow.Mode.Update, pid, args[u + 2])
+            : args.Contains(Installer.UninstallArg) ? new SetupWindow(SetupWindow.Mode.Uninstall) : new SetupWindow(SetupWindow.Mode.Install);
+        ShutdownMode = ShutdownMode.OnMainWindowClose;
+        MainWindow = window;
+        if (Environment.GetEnvironmentVariable("KAIRN_SETUP_SNAPSHOT") is { Length: > 0 } snapDir)
+            window.ContentRendered += async (_, _) => await window.SnapshotAsync(snapDir);
+        window.Show();
     }
 
     private async void Snapshots(string dir, string? lang)

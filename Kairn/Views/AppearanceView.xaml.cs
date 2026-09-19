@@ -129,7 +129,7 @@ public partial class AppearanceView : UserControl, IRefreshable
     }
 
     /// <summary>Nom affiché : traduit pour un thème préfait, tel quel pour un thème perso.</summary>
-    private static string DisplayName(ThemeDef t)
+    internal static string DisplayName(ThemeDef t)
     {
         int i = ThemePresets.All.FindIndex(p => p.Name == t.Name);
         return i >= 0 ? L.T("theme.preset." + i) : t.Name;

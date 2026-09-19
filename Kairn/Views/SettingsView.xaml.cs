@@ -24,6 +24,7 @@ public partial class SettingsView : UserControl, IRefreshable
 
         BuildRhythm();
         BuildAssistant();
+        BuildUpdates();
         StartupSwitch.IsChecked = S.StartWithWindows;
         TraySwitch.IsChecked = S.CloseToTray;
         DataPath.Text = Storage.Root;
@@ -108,6 +109,33 @@ public partial class SettingsView : UserControl, IRefreshable
     {
         S.RhythmSound = RhythmSoundSwitch.IsChecked == true;
         Save();
+    }
+
+    // ===================== Mises à jour =====================
+
+    private void BuildUpdates()
+    {
+        VersionLabel.Text = L.F("set.updates.version", Installer.VersionText(Installer.CurrentVersion));
+        UpdatesSwitch.IsChecked = S.CheckUpdates;
+        UpdateStatus.Text = Updater.Available is { } u ? L.F("set.updates.found", Installer.VersionText(u.Version)) : "";
+    }
+
+    private async void CheckUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateStatus.Text = "…";
+        try
+        {
+            var u = await Updater.CheckAsync(manual: true);
+            UpdateStatus.Text = u is null ? L.T("set.updates.upToDate") : L.F("set.updates.found", Installer.VersionText(u.Version));
+        }
+        catch { UpdateStatus.Text = L.T("set.updates.error"); }
+    }
+
+    private void UpdatesSwitch_Click(object sender, RoutedEventArgs e)
+    {
+        S.CheckUpdates = UpdatesSwitch.IsChecked == true;
+        Save();
+        if (S.CheckUpdates) Updater.StartAutoCheck();
     }
 
     // ===================== Système =====================

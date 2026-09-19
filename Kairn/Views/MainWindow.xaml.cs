@@ -14,6 +14,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         if (AppIcon.Window is { } icon) Icon = icon; // pierres aux couleurs du thème
+        Updater.Changed += RefreshUpdate;
+        RefreshUpdate();
         // Jamais plus grand que l'écran (petits écrans portables).
         var area = SystemParameters.WorkArea;
         Width = Math.Min(Width, area.Width - 40);
@@ -76,6 +78,32 @@ public partial class MainWindow : Window
 
     private IEnumerable<RadioButton> FindNav() =>
         LogicalTreeHelper.GetChildren(NavToday.Parent).OfType<RadioButton>();
+
+    // ===================== Mise à jour =====================
+
+    private void RefreshUpdate()
+    {
+        var u = Updater.Available;
+        UpdateCard.Visibility = u is null ? Visibility.Collapsed : Visibility.Visible;
+        if (u != null) UpdateTitle.Text = L.F("update.available", Installer.VersionText(u.Version));
+    }
+
+    private async void Update_Click(object sender, RoutedEventArgs e)
+    {
+        if (Updater.Available is not { } u) return;
+        UpdateBtn.IsEnabled = false;
+        UpdateSub.Visibility = Visibility.Visible;
+        try
+        {
+            await Updater.DownloadAndApplyAsync(u, new Progress<double>(f => UpdateSub.Text = L.F("update.downloading", (int)(f * 100))), CancellationToken.None);
+            App.Current.Quit(); // le setup attend notre fermeture pour remplacer le fichier, puis relance Kairn
+        }
+        catch
+        {
+            UpdateSub.Text = L.T("update.failed");
+            UpdateBtn.IsEnabled = true;
+        }
+    }
 
     public void RefreshGuard()
     {

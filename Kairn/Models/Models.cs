@@ -233,6 +233,8 @@ public class AppSettings
     public int AutoRhythmMinMinutes { get; set; } = 60;
     /// <summary>Petit son quand vient l'heure de la pause ou de reprendre.</summary>
     public bool RhythmSound { get; set; } = true;
+    /// <summary>Demander à GitHub s'il existe une nouvelle version (choisi pendant l'installation).</summary>
+    public bool CheckUpdates { get; set; }
     public AssistantSettings Assistant { get; set; } = new();
 }
 

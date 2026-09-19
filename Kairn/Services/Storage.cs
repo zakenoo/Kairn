@@ -70,6 +70,9 @@ public static class Storage
         catch { /* au pire, Read gardera une copie et repartira des valeurs par défaut */ }
     }
 
+    /// <summary>Kairn a-t-il déjà été configuré sur ce PC ? (sinon : première installation)</summary>
+    public static bool HasSettings => File.Exists(SettingsFile);
+
     public static void Save() => Write(DataFile, Data);
     public static void SaveSettings() => Write(SettingsFile, Settings);
 

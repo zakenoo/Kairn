@@ -45,6 +45,21 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Nouvelle version disponible (seulement si la personne a accepté les vérifications) -->
+                <Border DockPanel.Dock="Bottom" x:Name="UpdateCard" Visibility="Collapsed" Background="{DynamicResource AccentSoftBrush}"
+                        BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="{DynamicResource Radius}"
+                        Padding="14,12" Margin="0,0,0,10">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE896;" Foreground="{DynamicResource AccentBrush}" Margin="0,0,8,0"/>
+                            <TextBlock x:Name="UpdateTitle" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <TextBlock x:Name="UpdateSub" Style="{StaticResource Subtle}" FontSize="12" Margin="0,4,0,0" Visibility="Collapsed"/>
+                        <Button x:Name="UpdateBtn" Style="{StaticResource Primary}" Content="{l:T update.install}" HorizontalAlignment="Left"
+                                Margin="0,8,0,0" Padding="12,6" Click="Update_Click"/>
+                    </StackPanel>
+                </Border>
+
                 <StackPanel>
                     <RadioButton x:Name="NavToday" Style="{StaticResource NavItem}" GroupName="nav" Checked="Nav_Checked" Tag="today" AutomationProperties.Name="Aujourd'hui">
                         <StackPanel Orientation="Horizontal">

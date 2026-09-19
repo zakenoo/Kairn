@@ -25,6 +25,22 @@ Un planning de journée pour Windows, léger et 100 % local, qui s'ouvre au dém
 Aucun compte, aucune télémétrie. Les connexions réseau sont toutes facultatives et déclenchées par toi : ta messagerie (IMAP), directement de ton PC à ton serveur mail, avec un mot de passe chiffré par Windows (DPAPI) ; le téléchargement unique du modèle local (GitHub ggml-org/llama.cpp et Hugging Face, fichiers vérifiés par empreinte SHA-256) ; et le mode en ligne de l'assistant, qui n'envoie que ton objectif et tes réponses au fournisseur choisi, jamais ton calendrier ni tes notes (clé d'API chiffrée par DPAPI). Les données sont dans `%AppData%\Kairn` (`data.json`, `settings.json`, `library\`).
 **Mode portable** : crée un dossier `data` à côté de `Kairn.exe` et l'app y rangera tout.
 
+## Installer
+
+Télécharge `Kairn-Setup-x.y.z.exe` dans les [Releases](https://github.com/zakenoo/Kairn/releases) et lance-le : choix de la langue, de l'ambiance (appliquée en direct), de ton prénom et de quelques réglages, puis Kairn s'installe dans `%LocalAppData%\Programs\Kairn`, sans droits administrateur. Tout est prêt au premier lancement. La désinstallation se fait depuis Paramètres Windows → Applications, et tes données sont gardées sauf si tu demandes à les supprimer.
+
+Windows peut afficher « Windows a protégé votre ordinateur » au premier lancement (l'exe n'est pas signé) : clique sur **Informations complémentaires → Exécuter quand même**.
+
+**Mises à jour** : si tu l'as accepté pendant l'installation, Kairn demande une fois par jour à GitHub s'il existe une version plus récente (rien d'autre n'est envoyé) et affiche un bouton « Mettre à jour » : il télécharge le nouveau setup, vérifie son empreinte, remplace Kairn et le relance, en gardant tes données.
+
+## Publier une nouvelle version
+
+```powershell
+.\publish.ps1 1.0.1
+```
+
+Le script met la version à jour dans `Kairn.csproj` et crée `release\Kairn-Setup-1.0.1.exe`. Ensuite : commit + push, puis sur GitHub **Releases → Draft a new release**, tag `v1.0.1`, joins le fichier et publie. Les Kairn installés le verront tout seuls (le dépôt doit être public pour que la vérification fonctionne).
+
 ## Compiler
 
 Prérequis : [SDK .NET 10](https://dotnet.microsoft.com/download).
