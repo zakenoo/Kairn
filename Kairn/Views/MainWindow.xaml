@@ -32,23 +32,20 @@
                 </StackPanel>
 
                 <!-- Tout en bas : le code source et un petit lien de soutien -->
-                <DockPanel DockPanel.Dock="Bottom" Margin="2,10,0,0" LastChildFill="False">
-                    <Button DockPanel.Dock="Left" Style="{StaticResource Ghost}" Padding="6,4" FontSize="12" Click="Source_Click"
-                            ToolTip="{l:T side.source.tip}" Foreground="{DynamicResource FaintBrush}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE943;" FontSize="11" Margin="0,0,6,0"/>
-                            <TextBlock Text="{l:T side.source}"/>
-                        </StackPanel>
-                    </Button>
-                    <Border DockPanel.Dock="Right" x:Name="KofiBtn" Cursor="Hand" CornerRadius="5" Padding="7,3" Margin="0,0,2,0"
-                            VerticalAlignment="Center" Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource LineBrush}"
+                <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                    <Border x:Name="KofiBtn" Cursor="Hand" CornerRadius="6" Padding="10,6" HorizontalAlignment="Stretch"
+                            Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource LineBrush}"
                             BorderThickness="1" ToolTip="{l:T side.kofi.tip}" MouseLeftButtonDown="Press" MouseLeftButtonUp="Kofi_Click">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="☕" FontFamily="Segoe UI Emoji" FontSize="10.5" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Ko-fi" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SubtleBrush}" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="☕" FontFamily="Segoe UI Emoji" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Ko-fi" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SubtleBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
-                </DockPanel>
+                    <Button Style="{StaticResource Ghost}" Padding="4,3" Margin="0,6,0,0" FontSize="11.5" HorizontalAlignment="Center"
+                            Click="Source_Click" ToolTip="{l:T side.source.tip}" Foreground="{DynamicResource FaintBrush}"
+                            Content="github.com/zakenoo/Kairn"/>
+                </StackPanel>
+
 
                 <!-- Garde anti-distraction : raccourci visible en permanence -->
                 <Border DockPanel.Dock="Bottom" x:Name="GuardCard" Background="{DynamicResource ZoneGuardBrush}"
