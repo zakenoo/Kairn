@@ -56,7 +56,7 @@ public static class Storage
             var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(SettingsFile))?.AsObject();
             if (root is null || root["Theme"] is not System.Text.Json.Nodes.JsonValue oldTheme) return;
 
-            var theme = (oldTheme.ToString() == "Light" ? ThemePresets.All[1] : ThemePresets.All[0]).Clone();
+            var theme = (oldTheme.ToString() == "Light" ? ThemePresets.All.First(p => p.Name == "Grès clair") : ThemePresets.All.First(p => p.Name == "Pierre & sable")).Clone();
             if (root["Accent"]?.ToString() is { Length: > 0 } accent) theme.Colors["Accent"] = accent;
             if (root["FontFamily"]?.ToString() is { Length: > 0 } font) theme.Font = font;
             if (root["CornerRadius"] is { } radius && double.TryParse(radius.ToString(), System.Globalization.CultureInfo.InvariantCulture, out var r)) theme.Radius = r;

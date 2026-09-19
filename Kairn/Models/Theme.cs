@@ -87,9 +87,9 @@ public static class ThemeTokens
 
     public static string Fallback(string key) => key switch
     {
-        "Bg" => "#121110", "Surface" => "#1A1816", "Surface2" => "#23201D", "Hover" => "#2B2824",
-        "Line" => "#2D2A26", "Text" => "#EEEAE4", "Subtle" => "#9A948B", "Faint" => "#5E5952",
-        "Accent" => "#D6A461", "OnAccent" => "#1A1510", "Break" => "#8FBF9A", "Danger" => "#E0735F",
+        "Bg" => "#000000", "Surface" => "#0A0A0A", "Surface2" => "#151515", "Hover" => "#1E1E1E",
+        "Line" => "#1F1F1F", "Text" => "#F2F2F2", "Subtle" => "#8C8C8C", "Faint" => "#4D4D4D",
+        "Accent" => "#F2F2F2", "OnAccent" => "#000000", "Break" => "#9AD1A8", "Danger" => "#FF6F61",
         _ => "#FF00FF"
     };
 }

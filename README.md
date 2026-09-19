@@ -18,7 +18,7 @@ Un planning de journée pour Windows, léger et 100 % local, qui s'ouvre au dém
   - *Strict* : l'app est refermée dès qu'elle se relance pendant un bloc. Il faut attendre 10 s pour quitter ce mode.
   - Les pauses ne sont jamais surveillées. Le menu de la barre des tâches propose « Pause du garde 15 min ».
 - **Import / export .ics** (Apple Calendrier, Google Agenda, Outlook).
-- **Apparence entièrement modifiable** : 12 thèmes préfaits (Pierre & sable, Papier, Néon, Haut contraste…), les 12 couleurs de l'interface avec un sélecteur complet (teinte, saturation, transparence), une **image de fond pour chaque bloc** (fond de l'app, barre latérale, carte « En cours », cartes, lignes de tâches…) avec un voile réglable pour garder le texte lisible, l'opacité de chaque bloc, n'importe quelle police installée, la taille de l'interface, les arrondis et les bordures. Tes thèmes s'enregistrent, et s'exportent en `.kairntheme` (couleurs + images) pour les partager.
+- **Apparence entièrement modifiable** : 12 thèmes préfaits (Kairn, le noir d'encre par défaut, Pierre & sable, Papier, Néon, Haut contraste…), les 12 couleurs de l'interface avec un sélecteur complet (teinte, saturation, transparence), une **image de fond pour chaque bloc** (fond de l'app, barre latérale, carte « En cours », cartes, lignes de tâches…) avec un voile réglable pour garder le texte lisible, l'opacité de chaque bloc, n'importe quelle police installée, la taille de l'interface, les arrondis et les bordures. Tes thèmes s'enregistrent, et s'exportent en `.kairntheme` (couleurs + images) pour les partager.
 
 ## Confidentialité
 

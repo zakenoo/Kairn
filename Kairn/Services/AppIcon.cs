@@ -22,8 +22,8 @@ public static class AppIcon
     /// <summary>Levé quand l'icône change (le menu de notification met la sienne à jour).</summary>
     public static event Action<byte[]>? Changed;
 
-    public static Color StonesColor(ThemeDef t) => ThemeService.Parse(t.IconStones ?? t.Color("Accent"), "#D6A461");
-    public static Color TileColor(ThemeDef t) => ThemeService.Parse(t.IconTile ?? t.Color("Bg"), "#1C1B19");
+    public static Color StonesColor(ThemeDef t) => ThemeService.Parse(t.IconStones ?? t.Color("Accent"), "#F2F2F2");
+    public static Color TileColor(ThemeDef t) => ThemeService.Parse(t.IconTile ?? t.Color("Bg"), "#000000");
 
     public static void Apply(ThemeDef t)
     {

@@ -2,34 +2,34 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Valeurs par défaut ; ThemeService les remplace au lancement et à chaque changement de réglage. -->
-    <SolidColorBrush x:Key="BgBrush" Color="#121110"/>
-    <SolidColorBrush x:Key="SurfaceBrush" Color="#1A1816"/>
-    <SolidColorBrush x:Key="Surface2Brush" Color="#23201D"/>
-    <SolidColorBrush x:Key="HoverBrush" Color="#2B2824"/>
-    <SolidColorBrush x:Key="LineBrush" Color="#2D2A26"/>
-    <SolidColorBrush x:Key="TextBrush" Color="#EEEAE4"/>
-    <SolidColorBrush x:Key="SubtleBrush" Color="#9A948B"/>
-    <SolidColorBrush x:Key="FaintBrush" Color="#5E5952"/>
-    <SolidColorBrush x:Key="DangerBrush" Color="#E0735F"/>
-    <SolidColorBrush x:Key="BreakBrush" Color="#8FBF9A"/>
-    <Color x:Key="AccentColor">#D6A461</Color>
-    <SolidColorBrush x:Key="AccentBrush" Color="#D6A461"/>
-    <SolidColorBrush x:Key="AccentSoftBrush" Color="#2ED6A461"/>
-    <SolidColorBrush x:Key="OnAccentBrush" Color="White"/>
+    <SolidColorBrush x:Key="BgBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#0A0A0A"/>
+    <SolidColorBrush x:Key="Surface2Brush" Color="#151515"/>
+    <SolidColorBrush x:Key="HoverBrush" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="LineBrush" Color="#1F1F1F"/>
+    <SolidColorBrush x:Key="TextBrush" Color="#F2F2F2"/>
+    <SolidColorBrush x:Key="SubtleBrush" Color="#8C8C8C"/>
+    <SolidColorBrush x:Key="FaintBrush" Color="#4D4D4D"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="#FF6F61"/>
+    <SolidColorBrush x:Key="BreakBrush" Color="#9AD1A8"/>
+    <Color x:Key="AccentColor">#F2F2F2</Color>
+    <SolidColorBrush x:Key="AccentBrush" Color="#F2F2F2"/>
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="#30F2F2F2"/>
+    <SolidColorBrush x:Key="OnAccentBrush" Color="#000000"/>
     <FontFamily x:Key="AppFont">Segoe UI Variable Display</FontFamily>
     <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
-    <CornerRadius x:Key="Radius">12</CornerRadius>
-    <CornerRadius x:Key="RadiusSmall">7</CornerRadius>
+    <CornerRadius x:Key="Radius">6</CornerRadius>
+    <CornerRadius x:Key="RadiusSmall">4</CornerRadius>
     <CornerRadius x:Key="RadiusPill">999</CornerRadius>
 
     <!-- Blocs habillables (couleur ou image), remplacés par ThemeService -->
-    <SolidColorBrush x:Key="ZoneWindowBrush" Color="#121110"/>
-    <SolidColorBrush x:Key="ZoneSidebarBrush" Color="#1A1816"/>
-    <SolidColorBrush x:Key="ZoneNowCardBrush" Color="#1A1816"/>
-    <SolidColorBrush x:Key="ZoneCardBrush" Color="#1A1816"/>
-    <SolidColorBrush x:Key="ZoneRowBrush" Color="#1A1816"/>
-    <SolidColorBrush x:Key="ZoneGuardBrush" Color="#23201D"/>
-    <SolidColorBrush x:Key="ZoneNudgeBrush" Color="#1A1816"/>
+    <SolidColorBrush x:Key="ZoneWindowBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="ZoneSidebarBrush" Color="#0A0A0A"/>
+    <SolidColorBrush x:Key="ZoneNowCardBrush" Color="#0A0A0A"/>
+    <SolidColorBrush x:Key="ZoneCardBrush" Color="#0A0A0A"/>
+    <SolidColorBrush x:Key="ZoneRowBrush" Color="#0A0A0A"/>
+    <SolidColorBrush x:Key="ZoneGuardBrush" Color="#151515"/>
+    <SolidColorBrush x:Key="ZoneNudgeBrush" Color="#0A0A0A"/>
     <Thickness x:Key="CardBorder">1</Thickness>
     <ScaleTransform x:Key="UiScale" ScaleX="1" ScaleY="1"/>
 

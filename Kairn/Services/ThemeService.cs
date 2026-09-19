@@ -42,7 +42,7 @@ public static class ThemeService
         foreach (var (key, _) in ThemeTokens.ColorKeys)
             r[key + "Brush"] = Frozen(new SolidColorBrush(Parse(t.Color(key), ThemeTokens.Fallback(key))));
 
-        var accent = Parse(t.Color("Accent"), "#D6A461");
+        var accent = Parse(t.Color("Accent"), "#F2F2F2");
         r["AccentColor"] = accent;
         r["AccentSoftBrush"] = Frozen(new SolidColorBrush(Color.FromArgb(t.Dark ? (byte)0x30 : (byte)0x26, accent.R, accent.G, accent.B)));
 

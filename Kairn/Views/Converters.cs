@@ -14,7 +14,7 @@ public class CategoryBrushConverter : IValueConverter
     {
         var cat = Storage.CategoryById(value as string);
         if (cat is null) return Brushes.Transparent;
-        var b = new SolidColorBrush(ThemeService.Parse(cat.Color, "#D6A461"));
+        var b = new SolidColorBrush(ThemeService.Parse(cat.Color, "#F2F2F2"));
         b.Freeze();
         return b;
     }
@@ -93,7 +93,7 @@ public class HexToBrushConverter : IValueConverter
 {
     public object Convert(object? value, Type t, object? p, CultureInfo c)
     {
-        var b = new SolidColorBrush(ThemeService.Parse(value as string, "#D6A461"));
+        var b = new SolidColorBrush(ThemeService.Parse(value as string, "#F2F2F2"));
         b.Freeze();
         return b;
     }

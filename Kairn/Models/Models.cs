@@ -178,7 +178,7 @@ public class ResourceItem : Observable
 public class Category : Observable
 {
     private string _name = "";
-    private string _color = "#D6A461";
+    private string _color = "#F2F2F2";
     private string _emoji = "📁";
 
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
