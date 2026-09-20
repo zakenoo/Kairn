@@ -299,6 +299,11 @@ public partial class SetupWindow : Window
     {
         var old = _page;
         _page = page;
+        // Selon le mode, on n'entre pas forcément par l'accueil : celui-ci est visible dans le XAML
+        // et resterait superposé à la page demandée. On masque donc tout ce qui n'est ni la cible,
+        // ni la page qu'on est en train de faire disparaître en fondu.
+        foreach (var other in Pages.Children.OfType<FrameworkElement>())
+            if (other != page && other != old) other.Visibility = Visibility.Collapsed;
         if (old != null && old != page)
         {
             var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(130));
