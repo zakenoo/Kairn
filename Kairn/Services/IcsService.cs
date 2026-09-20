@@ -35,10 +35,16 @@ public static class IcsService
         File.WriteAllText(path, sb.ToString(), new UTF8Encoding(false));
     }
 
-    public static List<PlanTask> Import(string path)
+    public static List<PlanTask> Import(string path) => ParseText(File.ReadAllText(path));
+
+    /// <summary>
+    /// Lit un flux iCalendar, d'où qu'il vienne : un fichier choisi à la main, ou la réponse d'un serveur CalDAV.
+    /// Les journées entières sont ignorées : elles n'occupent pas de créneau et ne diraient rien de la disponibilité.
+    /// </summary>
+    public static List<PlanTask> ParseText(string text)
     {
         var result = new List<PlanTask>();
-        var lines = Unfold(File.ReadAllText(path));
+        var lines = Unfold(text);
         Dictionary<string, string>? ev = null;
 
         foreach (var line in lines)
@@ -56,8 +62,31 @@ public static class IcsService
             if (colon <= 0) continue;
             var name = line[..colon].Split(';')[0].ToUpperInvariant();
             ev.TryAdd(name, line[(colon + 1)..]);
+            // Le vrai identifiant de l'occurrence d'un événement récurrent : UID + date de l'occurrence.
+            if (name == "RECURRENCE-ID") ev["__RECURRENCE"] = line[(colon + 1)..];
         }
         return result;
+    }
+
+    /// <summary>Écrit un seul événement, prêt à être déposé sur un serveur CalDAV.</summary>
+    public static string EventText(PlanTask t, string uid)
+    {
+        var start = t.Date.ToDateTime(TimeOnly.MinValue) + t.Start;
+        var end = start + t.Duration;
+        var sb = new StringBuilder();
+        sb.Append("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Kairn//FR\r\nCALSCALE:GREGORIAN\r\n");
+        sb.Append("BEGIN:VEVENT\r\n");
+        sb.Append($"UID:{uid}\r\n");
+        sb.Append($"DTSTAMP:{DateTime.UtcNow:yyyyMMdd'T'HHmmss'Z'}\r\n");
+        // En UTC : le serveur et le téléphone n'ont aucune raison d'être dans le même fuseau que ce PC.
+        sb.Append($"DTSTART:{start.ToUniversalTime():yyyyMMdd'T'HHmmss'Z'}\r\n");
+        sb.Append($"DTEND:{end.ToUniversalTime():yyyyMMdd'T'HHmmss'Z'}\r\n");
+        sb.Append(Fold("SUMMARY:" + Escape((t.HasEmoji ? t.Emoji + " " : "") + t.Title)));
+        var body = t.Notes;
+        if (t.HasSteps) body = (body.Length > 0 ? body + "\n\n" : "") + string.Join("\n", t.Steps.Select(s => (s.Done ? "☑ " : "☐ ") + s.Title));
+        if (body.Length > 0) sb.Append(Fold("DESCRIPTION:" + Escape(body)));
+        sb.Append("END:VEVENT\r\nEND:VCALENDAR\r\n");
+        return sb.ToString();
     }
 
     private static PlanTask? ToTask(Dictionary<string, string> ev)
@@ -65,9 +94,14 @@ public static class IcsService
         if (!ev.TryGetValue("DTSTART", out var s) || !TryParseDate(s, out var start, out bool allDay)) return null;
         if (allDay) return null; // les journées entières n'ont pas de plage horaire
         var end = ev.TryGetValue("DTEND", out var e) && TryParseDate(e, out var d, out _) ? d : start.AddHours(1);
+        var uid = ev.GetValueOrDefault("UID", Guid.NewGuid().ToString("N"));
+        // Un événement réexporté par Kairn retrouve son identifiant d'origine : réimporter ne duplique rien.
+        // Sinon, les occurrences d'un événement récurrent partagent le même UID : on y ajoute leur date.
+        var key = uid.EndsWith("@kairn") ? uid
+                : uid + (ev.TryGetValue("__RECURRENCE", out var r) ? "#" + r : "#" + start.ToString("yyyyMMddHHmm"));
         return new PlanTask
         {
-            Id = ev.TryGetValue("UID", out var uid) ? StableId(uid) : Guid.NewGuid().ToString("N"),
+            Id = StableId(key),
             Date = DateOnly.FromDateTime(start),
             Start = start.TimeOfDay,
             End = end.TimeOfDay,

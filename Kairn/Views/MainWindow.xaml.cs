@@ -27,7 +27,12 @@ public partial class MainWindow : Window
             Root.Margin = WindowState == WindowState.Maximized ? new Thickness(7) : new Thickness(0);
             MaxBtn.Content = WindowState == WindowState.Maximized ? "" : "";
         };
-        Activated += (_, _) => (Host.Content as IRefreshable)?.Refresh();
+        Activated += (_, _) =>
+        {
+            (Host.Content as IRefreshable)?.Refresh();
+            // On revient sur Kairn : c'est le bon moment pour redemander à iCloud ce qui a changé.
+            if (CalendarSync.Linked) _ = CalendarSync.SyncAsync();
+        };
         Loc.Instance.Changed += OnLanguageChanged;
         FlowDirection = Loc.Instance.Current.Rtl ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         NavToday.IsChecked = true;

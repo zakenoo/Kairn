@@ -28,6 +28,11 @@
             <StackPanel x:Name="RhythmActions" Orientation="Horizontal" Margin="0,14,0,0" Visibility="Collapsed">
                 <Button Style="{StaticResource Primary}" Content="{l:T rhythm.toast.ok}" Click="Close_Click"/>
             </StackPanel>
+            <!-- Rappel avant une tâche : y aller, ou se le faire redire dans dix minutes. Jamais de reproche. -->
+            <StackPanel x:Name="ReminderActions" Orientation="Horizontal" Margin="0,14,0,0" Visibility="Collapsed">
+                <Button Style="{StaticResource Primary}" Content="{l:T remind.go}" Click="Back_Click"/>
+                <Button Style="{StaticResource Ghost}" Content="{l:T remind.later}" Margin="8,0,0,0" Click="RemindLater_Click"/>
+            </StackPanel>
         </StackPanel>
     </Border>
 </Window>

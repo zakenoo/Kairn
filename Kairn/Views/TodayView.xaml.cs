@@ -55,6 +55,13 @@ public partial class TodayView : UserControl, IRefreshable
         CarryCard.Visibility = _carried.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         CarryTitle.Text = _carried.Count > 1 ? L.F("today.carry.count", _carried.Count) : L.T("today.carry.title");
 
+        // L'essentiel : ce qui a été épinglé, au maximum trois. Au-delà, ce n'est plus l'essentiel.
+        var essential = all.Where(t => t.Pinned && !t.IsBreak).Take(3).ToList();
+        EssentialList.ItemsSource = essential;
+        EssentialCard.Visibility = essential.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        FocusToggle.IsChecked = Storage.Settings.FocusOnly;
+
         var hour = DateTime.Now.Hour;
         var name = string.IsNullOrWhiteSpace(Storage.Settings.UserName) ? "" : " " + Storage.Settings.UserName;
         Greeting.Text = L.T(hour < 5 ? "today.greet.night" : hour < 12 ? "today.greet.morning" : hour < 18 ? "today.greet.afternoon" : "today.greet.evening") + name + ".";
@@ -69,6 +76,33 @@ public partial class TodayView : UserControl, IRefreshable
         RefreshSide();
         UpdateStats();
         Tick();
+        ApplyFocus();
+    }
+
+    // ===================== Mode focus =====================
+
+    /// <summary>
+    /// « Ne me montre que ce que je fais maintenant. » Tout le reste est masqué, pas supprimé :
+    /// une liste de quinze lignes suffit à paralyser, et l'essentiel n'en est qu'une.
+    /// </summary>
+    private void ApplyFocus()
+    {
+        bool focus = Storage.Settings.FocusOnly;
+        bool empty = _tasks.Count == 0;
+
+        Quote.Visibility = focus ? Visibility.Collapsed : Visibility.Visible;
+        ListHeader.Visibility = empty || focus ? Visibility.Collapsed : Visibility.Visible;
+        TaskList.Visibility = focus ? Visibility.Collapsed : Visibility.Visible;
+        CarryCard.Visibility = !focus && _carried.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        // L'essentiel reste visible même en focus : c'est justement ce qu'on a décidé de ne pas perdre de vue.
+        LayoutSide(Layout.ActualWidth);
+    }
+
+    private void FocusToggle_Click(object sender, RoutedEventArgs e)
+    {
+        Storage.Settings.FocusOnly = FocusToggle.IsChecked == true;
+        Storage.SaveSettings();
+        ApplyFocus();
     }
 
     private void Tick()
@@ -122,9 +156,10 @@ public partial class TodayView : UserControl, IRefreshable
         if (!rhythm) RhythmBar.Visibility = Visibility.Collapsed;
         Remaining.Text = remaining;
         RemainingLabel.Text = remainingLabel;
-        NowDone.Visibility = task.Done ? Visibility.Collapsed : Visibility.Visible;
+        // Un rendez-vous iCloud s'affiche et se décompte, mais il ne se coche pas et ne se reporte pas.
+        NowDone.Visibility = task.Done || task.IsExternal ? Visibility.Collapsed : Visibility.Visible;
         NowDone.Tag = task;
-        bool canPostpone = !task.Done && !task.IsBreak && isNow;
+        bool canPostpone = !task.Done && !task.IsBreak && !task.IsExternal && isNow;
         NowPostpone.Visibility = canPostpone ? Visibility.Visible : Visibility.Collapsed;
         NowPostpone.Tag = task;
         NowPostponeText.Text = L.T("today.postpone");
@@ -146,7 +181,23 @@ public partial class TodayView : UserControl, IRefreshable
             NowResources.ItemsSource = items;
             NowResources.Visibility = items is { Count: > 0 } ? Visibility.Visible : Visibility.Collapsed;
             ShowTaskLinks(task);
+            ShowSteps(task);
         }
+        else if (!ReferenceEquals(NowSteps.ItemsSource, task.Steps)) ShowSteps(task);
+    }
+
+    /// <summary>Les étapes de la tâche en cours : la liste sur laquelle on peut vraiment commencer.</summary>
+    private void ShowSteps(PlanTask? task)
+    {
+        if (task is null || task.Steps.Count == 0)
+        {
+            NowSteps.ItemsSource = null;
+            NowStepsBox.Visibility = Visibility.Collapsed;
+            return;
+        }
+        NowSteps.ItemsSource = task.Steps;
+        NowStepsCount.Text = task.StepsText;
+        NowStepsBox.Visibility = Visibility.Visible;
     }
 
     /// <summary>Fin de journée : on célèbre ce qui est fait, et on propose de reporter le reste.</summary>
@@ -185,8 +236,14 @@ public partial class TodayView : UserControl, IRefreshable
 
     private void UpdateStats()
     {
-        int done = _tasks.Count(x => x.Done && !x.IsBreak) + _carried.Count(x => x.Done);
-        DoneText.Text = done == 0 ? L.T("today.firstStone") : L.P("today.doneCount", done);
+        // Une pierre par tâche finie, et une par étape finie : commencer compte autant que terminer.
+        int done = _tasks.Count(x => x.Done && !x.IsBreak && !x.IsExternal) + _carried.Count(x => x.Done)
+                 + _tasks.Concat(_carried).Where(x => !x.IsBreak).Sum(x => x.StepsDone);
+        DoneText.Text = done == 0 ? L.T("today.firstStone") : L.P("today.stones", done);
+
+        var (path, tip) = Progress.Describe();
+        PathText.Text = path;
+        PathText.ToolTip = tip;
 
         var today = _tasks.Concat(_carried).Where(x => x.Done && !x.IsBreak).Aggregate(TimeSpan.Zero, (a, x) => a + Rhythm.WorkTime(x));
         FocusTimeText.Text = today > TimeSpan.Zero ? L.F("today.workToday", PlanTask.FormatDuration(today)) : "";
@@ -202,7 +259,8 @@ public partial class TodayView : UserControl, IRefreshable
 
     private void DrawCairn(int stones)
     {
-        const int maxDrawn = 7;
+        // Le cairn monte un peu plus haut à chaque palier du sentier : rien ne se perd, tout s'accumule.
+        int maxDrawn = Progress.Current(Progress.Stones()).Cairn;
         int drawn = Math.Min(stones, maxDrawn);
         bool grew = _stonesShown >= 0 && stones > _stonesShown;
         _stonesShown = stones;
@@ -214,17 +272,23 @@ public partial class TodayView : UserControl, IRefreshable
             var slot = new Ellipse { Width = 64, Height = 16, StrokeThickness = 1.5, StrokeDashArray = [3, 3] };
             slot.SetResourceReference(Shape.StrokeProperty, "FaintBrush");
             Canvas.SetLeft(slot, 10);
-            Canvas.SetTop(slot, 78);
+            Canvas.SetTop(slot, 94);
             Cairn.Children.Add(slot);
             return;
         }
 
-        double y = 96;
+        // Le tas s'aplatit pour tenir dans la hauteur disponible, même à dix-sept pierres.
+        const double Base = 112, Gap = 2, Head = 18;
+        double natural = 0;
+        for (int i = 0; i < drawn; i++) natural += Math.Max(9, 16 - i) + Gap;
+        double squeeze = Math.Min(1, (Base - Head) / natural);
+
+        double y = Base;
         for (int i = 0; i < drawn; i++)
         {
-            double w = Math.Max(22, 74 - i * 8);
-            double h = Math.Max(9, 16 - i * 1);
-            y -= h + 2;
+            double w = Math.Max(22, 74 - i * (52.0 / Math.Max(1, maxDrawn - 1)));
+            double h = Math.Max(9, 16 - i) * squeeze;
+            y -= h + Gap * squeeze;
             double jitter = i % 3 == 0 ? 0 : i % 3 == 1 ? 3 : -3;
             var stone = new Ellipse { Width = w, Height = h, Opacity = 1 - i * 0.06 };
             stone.SetResourceReference(Shape.FillProperty, "AccentBrush");
@@ -257,16 +321,76 @@ public partial class TodayView : UserControl, IRefreshable
 
     private void Check_Click(object sender, RoutedEventArgs e)
     {
+        // La récompense arrive avant le rangement : c'est elle qu'on est venu chercher.
+        if (sender is CheckBox { Tag: PlanTask task })
+        {
+            if (task.Done) Reward(task, sender as FrameworkElement);
+            else Reminders.Cancel(task);
+        }
         Storage.Save();
         UpdateStats();
         _shown = null;
         Tick();
+        ApplyFocus();
+    }
+
+    /// <summary>Une étape cochée : un son plus discret, et la tâche se termine toute seule quand la dernière tombe.</summary>
+    private void Step_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not CheckBox { Tag: SubTask step }) return;
+        if (step.Done) { Celebrate.Step(); Celebrate.Flash((FrameworkElement)sender); }
+        NowStepsCount.Text = _shown?.StepsText ?? "";
+        Storage.Save();
+        UpdateStats();
+    }
+
+    /// <summary>Le son, la petite animation, et les confettis quand c'était la dernière de la journée.</summary>
+    private void Reward(PlanTask task, FrameworkElement? row)
+    {
+        // « La dernière de la journée » ne compte que ce qui t'appartient : un rendez-vous iCloud n'est pas une tâche à finir.
+        bool lastOfDay = _tasks.Concat(_carried).All(x => x.Done || x.IsBreak || x.IsExternal);
+        if (lastOfDay) { Celebrate.Day(); Celebrate.Confetti(NowCard); }
+        else Celebrate.Task();
+        if (row != null) Celebrate.Flash(row);
+        Reminders.Cancel(task);
     }
 
     private void NowDone_Click(object sender, RoutedEventArgs e)
     {
-        if (NowDone.Tag is PlanTask t) t.Done = true;
-        Check_Click(sender, e);
+        if (NowDone.Tag is PlanTask t)
+        {
+            t.Done = true;
+            Reward(t, NowCard);
+        }
+        Storage.Save();
+        UpdateStats();
+        _shown = null;
+        Tick();
+        ApplyFocus();
+    }
+
+    // ===================== L'essentiel =====================
+
+    private void Pin_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: PlanTask t }) return;
+        // Trois au maximum : la plus ancienne épingle cède sa place, sans rien demander.
+        if (!t.Pinned)
+        {
+            var pinned = Storage.TasksFor(_day).Where(x => x.Pinned).ToList();
+            if (pinned.Count >= 3) pinned[0].Pinned = false;
+        }
+        t.Pinned = !t.Pinned;
+        Storage.Save();
+        Refresh();
+    }
+
+    private void Unpin_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: PlanTask t }) return;
+        t.Pinned = false;
+        Storage.Save();
+        Refresh();
     }
 
     private void NowPostpone_Click(object sender, RoutedEventArgs e)

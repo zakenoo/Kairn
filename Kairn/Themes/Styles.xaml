@@ -291,6 +291,34 @@
         </Setter>
     </Style>
 
+    <!-- Bascule discrète en forme de pastille (mode focus, vues du planning) -->
+    <Style x:Key="FocusChip" TargetType="ToggleButton">
+        <Setter Property="Foreground" Value="{DynamicResource SubtleBrush}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="bd" Background="{DynamicResource Surface2Brush}" BorderBrush="Transparent" BorderThickness="1"
+                            CornerRadius="{DynamicResource RadiusPill}" Padding="11,5">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource HoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ===== Case à cocher ronde ===== -->
     <Style x:Key="RoundCheck" TargetType="CheckBox">
         <Setter Property="Cursor" Value="Hand"/>

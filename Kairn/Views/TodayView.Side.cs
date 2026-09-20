@@ -35,9 +35,20 @@ public partial class TodayView
 
     // ===================== Mise en page : 2 colonnes si la place le permet =====================
 
-    private void Layout_SizeChanged(object sender, SizeChangedEventArgs e)
+    private void Layout_SizeChanged(object sender, SizeChangedEventArgs e) => LayoutSide(e.NewSize.Width);
+
+    /// <summary>Place la colonne des outils : à droite si la fenêtre est large, dessous sinon, nulle part en mode focus.</summary>
+    private void LayoutSide(double width)
     {
-        bool wide = e.NewSize.Width >= 940;
+        if (Storage.Settings.FocusOnly)
+        {
+            Side.Visibility = Visibility.Collapsed;
+            SideCol.Width = new GridLength(0);
+            GapCol.Width = new GridLength(0);
+            return;
+        }
+        Side.Visibility = Visibility.Visible;
+        bool wide = width >= 940;
         SideCol.Width = wide ? new GridLength(310) : new GridLength(0);
         GapCol.Width = wide ? new GridLength(24) : new GridLength(0);
         Grid.SetColumn(Side, wide ? 2 : 0);

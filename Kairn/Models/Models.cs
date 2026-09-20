@@ -21,6 +21,20 @@ public abstract class Observable : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }
 
+/// <summary>
+/// Une étape d'une tâche : le plus petit morceau qu'on puisse cocher.
+/// C'est ce qui permet de commencer quand la tâche entière paraît infaisable.
+/// </summary>
+public class SubTask : Observable
+{
+    private string _title = "";
+    private bool _done;
+
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string Title { get => _title; set => Set(ref _title, value); }
+    public bool Done { get => _done; set => Set(ref _done, value); }
+}
+
 /// <summary>Une tâche planifiée sur une plage horaire d'un jour donné.</summary>
 public class PlanTask : Observable
 {
@@ -32,6 +46,8 @@ public class PlanTask : Observable
     private TimeSpan _end;
     private string? _categoryId;
     private string? _section;
+    private string? _emoji;
+    private bool _pinned;
 
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public DateOnly Date { get; set; }
@@ -45,6 +61,45 @@ public class PlanTask : Observable
     public string? CategoryId { get => _categoryId; set => Set(ref _categoryId, value); }
     /// <summary>Titre de section facultatif (ex : « Après-midi : Échauffement »).</summary>
     public string? Section { get => _section; set => Set(ref _section, value); }
+
+    /// <summary>Pictogramme choisi pour la tâche : se reconnaît sans lire.</summary>
+    public string? Emoji { get => _emoji; set { if (Set(ref _emoji, value)) OnPropertyChanged(nameof(HasEmoji)); } }
+
+    /// <summary>
+    /// Tâche mise dans « L'essentiel » : les deux ou trois choses qui comptent vraiment aujourd'hui.
+    /// C'est la seule façon de dire « ça compte », volontairement : une étoile, un clic, rien à lire.
+    /// </summary>
+    public bool Pinned { get => _pinned; set => Set(ref _pinned, value); }
+
+    /// <summary>
+    /// Minutes avant le début où prévenir (ex : 60, 15, 0).
+    /// Null = les rappels par défaut des réglages ; liste vide = cette tâche n'en veut aucun.
+    /// </summary>
+    public List<int>? Reminders { get; set; }
+
+    private ObservableCollection<SubTask> _steps = [];
+
+    /// <summary>Étapes cochables : découper jusqu'à ce que la première devienne ridicule à faire.</summary>
+    public ObservableCollection<SubTask> Steps
+    {
+        get => _steps;
+        set
+        {
+            Unwatch(_steps);
+            _steps = value ?? [];
+            Watch(_steps);
+            StepsChanged();
+        }
+    }
+
+    /// <summary>
+    /// Identifiant de l'événement dans le calendrier iCloud d'où il vient.
+    /// Non nul : c'est un rendez-vous importé. Kairn l'affiche, le contourne, et ne le modifie JAMAIS.
+    /// </summary>
+    public string? ExternalId { get; set; }
+    /// <summary>Nom du calendrier d'origine, pour le dire sur la ligne (« Perso », « Travail »…).</summary>
+    public string? ExternalCalendar { get; set; }
+    [JsonIgnore] public bool IsExternal => ExternalId != null;
 
     /// <summary>Ce qu'il faut ouvrir pour cette tâche : un outil, un site (Canva, une vidéo YouTube…), un fichier.</summary>
     public List<TaskLink> Links { get; set; } = [];
@@ -82,6 +137,45 @@ public class PlanTask : Observable
         set { if (Set(ref _carriedFrom, value)) OnPropertyChanged(nameof(CarriedText)); }
     }
 
+    public PlanTask() => Watch(_steps);
+
+    private void Watch(ObservableCollection<SubTask> steps)
+    {
+        steps.CollectionChanged += StepsCollectionChanged;
+        foreach (var s in steps) s.PropertyChanged += StepChanged;
+    }
+
+    private void Unwatch(ObservableCollection<SubTask> steps)
+    {
+        steps.CollectionChanged -= StepsCollectionChanged;
+        foreach (var s in steps) s.PropertyChanged -= StepChanged;
+    }
+
+    private void StepsCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        foreach (SubTask s in e.OldItems ?? (System.Collections.IList)Array.Empty<SubTask>()) s.PropertyChanged -= StepChanged;
+        foreach (SubTask s in e.NewItems ?? (System.Collections.IList)Array.Empty<SubTask>()) s.PropertyChanged += StepChanged;
+        StepsChanged();
+    }
+
+    private void StepChanged(object? sender, PropertyChangedEventArgs e) => StepsChanged();
+
+    private void StepsChanged()
+    {
+        OnPropertyChanged(nameof(HasSteps));
+        OnPropertyChanged(nameof(StepsCount));
+        OnPropertyChanged(nameof(StepsDone));
+        OnPropertyChanged(nameof(StepsText));
+        OnPropertyChanged(nameof(NextStep));
+    }
+
+    [JsonIgnore] public bool HasSteps => Steps.Count > 0;
+    [JsonIgnore] public int StepsCount => Steps.Count;
+    [JsonIgnore] public int StepsDone => Steps.Count(s => s.Done);
+    [JsonIgnore] public string StepsText => Steps.Count == 0 ? "" : $"{StepsDone}/{Steps.Count}";
+    /// <summary>La première étape pas encore faite : le seul truc à regarder pour démarrer.</summary>
+    [JsonIgnore] public SubTask? NextStep => Steps.FirstOrDefault(s => !s.Done);
+    [JsonIgnore] public bool HasEmoji => !string.IsNullOrWhiteSpace(Emoji);
     [JsonIgnore] public bool HasNotes => !string.IsNullOrWhiteSpace(Notes);
     [JsonIgnore] public string TimeRange => $"{Fmt(Start)} – {Fmt(End)}";
     [JsonIgnore] public string SlotText => Floating ? Services.L.T("task.carry.slot") : TimeRange;
@@ -122,7 +216,10 @@ public class PlanTask : Observable
     {
         Date = date, Start = Start, End = End, Title = Title, Notes = Notes,
         IsBreak = IsBreak, CategoryId = CategoryId, Section = Section,
-        Links = Links.Select(l => new TaskLink { Title = l.Title, Target = l.Target }).ToList(), AutoOpen = AutoOpen, Rhythm = Rhythm, GoalId = GoalId
+        Links = Links.Select(l => new TaskLink { Title = l.Title, Target = l.Target }).ToList(), AutoOpen = AutoOpen, Rhythm = Rhythm, GoalId = GoalId,
+        Emoji = Emoji, Reminders = Reminders is null ? null : [.. Reminders],
+        // Une copie repart avec toutes ses étapes à faire.
+        Steps = [.. Steps.Select(s => new SubTask { Title = s.Title })]
     };
 }
 
@@ -139,6 +236,33 @@ public class Tool
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Name { get; set; } = "";
     public string Target { get; set; } = "";
+}
+
+/// <summary>
+/// Calendrier iCloud relié (CalDAV). Rien n'est activé sans que la personne l'ait explicitement demandé,
+/// et le mot de passe est un mot de passe d'application Apple, révocable à tout moment côté Apple.
+/// </summary>
+public class CalendarAccount
+{
+    /// <summary>Identifiant Apple.</summary>
+    public string User { get; set; } = "";
+    /// <summary>Mot de passe d'application, chiffré par Windows (DPAPI) pour ce seul compte Windows.</summary>
+    public string ProtectedPassword { get; set; } = "";
+    public string BaseUrl { get; set; } = "https://caldav.icloud.com";
+    /// <summary>Dossier des calendriers, trouvé une fois à la connexion.</summary>
+    public string? HomeUrl { get; set; }
+    /// <summary>Calendriers dont on affiche les rendez-vous dans Kairn.</summary>
+    public List<string> Read { get; set; } = [];
+    /// <summary>
+    /// Le calendrier « Kairn » créé par l'app. C'est le SEUL endroit où Kairn a le droit d'écrire :
+    /// jamais un calendrier existant, jamais un événement qu'il n'a pas créé.
+    /// </summary>
+    public string? WriteHref { get; set; }
+    /// <summary>Envoyer les tâches planifiées de Kairn vers ce calendrier.</summary>
+    public bool Push { get; set; }
+    /// <summary>Identifiants des événements que Kairn a déposés là-bas (pour savoir lesquels retirer).</summary>
+    public List<string> Pushed { get; set; } = [];
+    public DateTime LastSync { get; set; }
 }
 
 /// <summary>Messagerie ouverte dans le navigateur (aucune connexion faite par Kairn).</summary>
@@ -220,6 +344,8 @@ public class AppSettings
     /// <summary>Outils de travail affichés sur l'accueil.</summary>
     public List<Tool> Tools { get; set; } = [];
     public MailAccount? Mail { get; set; }
+    /// <summary>Calendrier iCloud relié. Null tant que la personne ne l'a pas demandé.</summary>
+    public CalendarAccount? Calendar { get; set; }
     /// <summary>Alternative sans mot de passe : l'accueil ouvre simplement la messagerie dans le navigateur.</summary>
     public WebmailLink? Webmail { get; set; }
     /// <summary>Pendant un bloc de travail, n'affiche que le nombre de mails non lus.</summary>
@@ -233,6 +359,18 @@ public class AppSettings
     public int AutoRhythmMinMinutes { get; set; } = 60;
     /// <summary>Petit son quand vient l'heure de la pause ou de reprendre.</summary>
     public bool RhythmSound { get; set; } = true;
+    /// <summary>Petit son quand une tâche ou une étape est cochée.</summary>
+    public bool DoneSound { get; set; } = true;
+    /// <summary>Animations de réussite (la ligne s'illumine, confettis aux grands moments).</summary>
+    public bool Celebrate { get; set; } = true;
+    /// <summary>Rappels proposés par défaut à une nouvelle tâche, en minutes avant le début.</summary>
+    public List<int> DefaultReminders { get; set; } = [15];
+    /// <summary>Raccourci clavier global Ctrl+Alt+K : noter une idée sans chercher la fenêtre.</summary>
+    public bool QuickAddHotkey { get; set; } = true;
+    /// <summary>Vue du planning : « month », « week » ou « board ».</summary>
+    public string PlanView { get; set; } = "month";
+    /// <summary>Aujourd'hui : ne montrer que la tâche en cours, le reste est masqué.</summary>
+    public bool FocusOnly { get; set; }
     /// <summary>Demander à GitHub s'il existe une nouvelle version (choisi pendant l'installation).</summary>
     public bool CheckUpdates { get; set; }
     public AssistantSettings Assistant { get; set; } = new();

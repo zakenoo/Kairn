@@ -70,6 +70,32 @@ public partial class NudgeWindow : Window
     /// <summary>Nombre de conseils de pause (clés rhythm.tip.0 à rhythm.tip.4).</summary>
     public const int TipCount = 5;
 
+    private PlanTask? _reminderTask;
+
+    /// <summary>Une tâche va commencer : le rappel dit quoi, dans combien de temps, et rien d'autre.</summary>
+    public static void ShowReminder(PlanTask task, int minutes)
+    {
+        var w = new NudgeWindow { _reminderTask = task };
+        w.Header.Text = L.T("remind.header");
+        w.TaskTitle.Text = (task.HasEmoji ? task.Emoji + "  " : "") + task.Title;
+        w.Detail.Text = minutes <= 0
+            ? L.F("remind.now", PlanTask.Fmt(task.Start), task.DurationText)
+            : L.F("remind.in", PlanTask.FormatDuration(TimeSpan.FromMinutes(minutes)), PlanTask.Fmt(task.Start));
+        // La première étape, s'il y en a une : c'est elle qui fait démarrer, pas le titre.
+        if (task.NextStep is { } step) w.Detail.Text += "\n" + L.F("remind.firstStep", step.Title);
+        w.Actions.Visibility = Visibility.Collapsed;
+        w.ReminderActions.Visibility = Visibility.Visible;
+        w._autoClose.Interval = TimeSpan.FromSeconds(25);
+        if (Storage.Settings.RhythmSound) System.Media.SystemSounds.Asterisk.Play();
+        Open(w);
+    }
+
+    private void RemindLater_Click(object sender, RoutedEventArgs e)
+    {
+        if (_reminderTask is { } t) Reminders.Snooze(t, 10);
+        FadeOut();
+    }
+
     private static void Open(NudgeWindow w)
     {
         _open?.Close();

@@ -49,6 +49,9 @@ public static class GoalScheduler
                 {
                     Date = day, Start = start, End = end, Title = s.Title, GoalId = g.Id, CategoryId = g.CategoryId,
                     Notes = s.Instructions, Section = g.Title,
+                    // Les consignes de l'assistant sont déjà des étapes numérotées : on en fait des cases à cocher.
+                    // Un pavé de texte se relit ; une liste d'étapes se commence.
+                    Steps = [.. StepsFrom(s.Instructions)],
                     Links = s.Resources.Select(r => new TaskLink { Title = r.Title, Target = r.Target }).ToList(),
                 });
                 i++;
@@ -90,6 +93,19 @@ public static class GoalScheduler
         if (tasks.Count > 0) g.PlannedUntil = tasks.Max(t => t.Date);
         if (!Storage.Data.Goals.Contains(g)) Storage.Data.Goals.Add(g);
         Storage.Save();
+    }
+
+    /// <summary>
+    /// Une ligne de consigne = une étape cochable. Les numéros de tête sont retirés :
+    /// la liste se renumérote d'elle-même et on ne coche pas un numéro, on coche une action.
+    /// </summary>
+    private static IEnumerable<SubTask> StepsFrom(string instructions)
+    {
+        foreach (var raw in (instructions ?? "").Replace("\r", "").Split('\n'))
+        {
+            var line = System.Text.RegularExpressions.Regex.Replace(raw.Trim(), @"^\s*(?:\d+\s*[.)\-–]|[*\-•·])\s*", "").Trim();
+            if (line.Length > 1) yield return new SubTask { Title = line };
+        }
     }
 
     private static Category AddSub(Category parent, string name)

@@ -13,6 +13,7 @@ public class UndoBar : Border
 {
     private readonly TextBlock _text = new() { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 420 };
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(8) };
+    private readonly Button _undoBtn;
     private Action? _undo, _commit;
 
     public UndoBar()
@@ -28,12 +29,12 @@ public class UndoBar : Border
         SetResourceReference(CornerRadiusProperty, "Radius");
         Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 18, ShadowDepth = 3, Opacity = 0.3 };
 
-        var undo = new Button { Content = L.T("undo.action"), Margin = new Thickness(16, 0, 0, 0) };
-        undo.SetResourceReference(StyleProperty, "Primary");
-        undo.Click += (_, _) => Undo();
+        _undoBtn = new Button { Content = L.T("undo.action"), Margin = new Thickness(16, 0, 0, 0) };
+        _undoBtn.SetResourceReference(StyleProperty, "Primary");
+        _undoBtn.Click += (_, _) => Undo();
         var row = new DockPanel();
-        DockPanel.SetDock(undo, Dock.Right);
-        row.Children.Add(undo);
+        DockPanel.SetDock(_undoBtn, Dock.Right);
+        row.Children.Add(_undoBtn);
         row.Children.Add(_text);
         Child = row;
 
@@ -49,6 +50,18 @@ public class UndoBar : Border
         _undo = undo;
         _commit = commit;
         _text.Text = text;
+        _undoBtn.Visibility = Visibility.Visible;
+        Visibility = Visibility.Visible;
+        _timer.Stop();
+        _timer.Start();
+    }
+
+    /// <summary>Même bandeau, mais juste pour dire quelque chose : rien à annuler, pas de bouton.</summary>
+    public void Note(string text)
+    {
+        Commit();
+        _text.Text = text;
+        _undoBtn.Visibility = Visibility.Collapsed;
         Visibility = Visibility.Visible;
         _timer.Stop();
         _timer.Start();

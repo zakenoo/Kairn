@@ -19,7 +19,7 @@ public static class CarryOver
         var now = DateTime.Now;
         var today = DateOnly.FromDateTime(now);
         var next = Storage.Data.Tasks
-            .Where(t => !t.IsBreak && !t.Floating && (t.Date > today || (t.Date == today && (!afterNow || t.Start > now.TimeOfDay))))
+            .Where(t => !t.IsBreak && !t.Floating && !t.IsExternal && (t.Date > today || (t.Date == today && (!afterNow || t.Start > now.TimeOfDay))))
             .OrderBy(t => t.Date).ThenBy(t => t.Start)
             .FirstOrDefault();
         if (next != null) return next.Date;
@@ -40,7 +40,7 @@ public static class CarryOver
     public static DateOnly PostponeRemaining(DateOnly day)
     {
         var target = NextSessionDate(afterNow: true);
-        foreach (var t in Storage.Data.Tasks.Where(t => t.Date == day && !t.Done && !t.IsBreak).ToList())
+        foreach (var t in Storage.Data.Tasks.Where(t => t.Date == day && !t.Done && !t.IsBreak && !t.IsExternal).ToList())
             Move(t, target);
         Storage.Save();
         return target;
@@ -53,7 +53,7 @@ public static class CarryOver
     public static int RollOver()
     {
         var today = DateOnly.FromDateTime(DateTime.Now);
-        var pending = Storage.Data.Tasks.Where(t => t.Date < today && !t.Done && !t.IsBreak).ToList();
+        var pending = Storage.Data.Tasks.Where(t => t.Date < today && !t.Done && !t.IsBreak && !t.IsExternal).ToList();
         if (pending.Count == 0) return 0;
         var target = NextSessionDate(afterNow: false);
         foreach (var t in pending) Move(t, target);

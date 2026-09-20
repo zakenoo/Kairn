@@ -67,7 +67,7 @@ public static partial class PlanParser
                     task.End = ToTime(m.Groups["h2"].Value, m.Groups["m2"].Value, m.Groups["ap2"].Value);
                     explicitEnd.Add(task);
                 }
-                SplitTitle(ExtractRhythm(m.Groups["rest"].Value.Trim(), task), task);
+                SplitTitle(ExtractMarks(ExtractRhythm(m.Groups["rest"].Value.Trim(), task), task), task);
                 task.IsBreak = BreakWords().IsMatch(task.Title);
                 tasks.Add(task);
                 last = task;
@@ -152,6 +152,22 @@ public static partial class PlanParser
         if (!m.Success) return rest;
         task.Rhythm = m.Groups["w"].Success ? Rhythm.Parse($"{m.Groups["w"].Value}/{m.Groups["p"].Value}")?.ToString() : Rhythm.Presets[0].Code;
         return RhythmTag().Replace(rest, "").Trim();
+    }
+
+    // Un pictogramme en tête de ligne : « 9h 🏃 Courir ».
+    [GeneratedRegex(@"^(?<e>[\p{Cs}\p{So}]{1,4}(?:️)?)\s+")]
+    private static partial Regex LeadingEmoji();
+
+    /// <summary>
+    /// « 9h 🏃 Courir » : le pictogramme sort du titre et devient l'icône de la tâche.
+    /// C'est ce qu'on écrit naturellement dans un programme collé, autant s'en servir.
+    /// </summary>
+    private static string ExtractMarks(string rest, PlanTask task)
+    {
+        var emoji = LeadingEmoji().Match(rest);
+        if (!emoji.Success) return rest;
+        task.Emoji = emoji.Groups["e"].Value;
+        return rest[emoji.Length..];
     }
 
     private static bool LooksLikeTask(Match m) => m.Groups["rest"].Value.Trim().Length > 0;

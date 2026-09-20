@@ -52,7 +52,7 @@ public static class Rhythm
     /// <summary>Rythme réellement appliqué : celui de la tâche, ou le rythme automatique des tâches longues.</summary>
     public static Spec? For(PlanTask t)
     {
-        if (t.IsBreak || t.Floating) return null;
+        if (t.IsBreak || t.Floating || t.IsExternal) return null; // un rendez-vous ne se découpe pas en pomodoros
         if (t.Rhythm == Off) return null;
         var spec = t.Rhythm != null ? Parse(t.Rhythm)
             : t.Duration.TotalMinutes >= Storage.Settings.AutoRhythmMinMinutes ? Parse(Storage.Settings.AutoRhythm) : null;

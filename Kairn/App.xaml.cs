@@ -73,6 +73,16 @@ public partial class App : Application
         Guard.RhythmChanged += NudgeWindow.ShowRhythm;
         Guard.Start();
 
+        // « Ça commence dans un quart d'heure » : le rappel que rien ne remplace quand on ne sent pas le temps.
+        Reminders.Due += NudgeWindow.ShowReminder;
+        Reminders.Start();
+        // Ctrl+Alt+K depuis n'importe où : noter une idée avant qu'elle s'échappe.
+        HotKey.Apply(QuickAddWindow.Open);
+
+        // Calendrier iCloud, seulement s'il a été relié : les rendez-vous descendent, les séances remontent.
+        CalendarSync.Changed += () => Dispatcher.BeginInvoke(Refreshed);
+        CalendarSync.Start();
+
         if (Storage.Settings.CheckUpdates) Updater.StartAutoCheck();
 
         MainWin = new MainWindow();
@@ -143,6 +153,7 @@ public partial class App : Application
         if (_tray?.ContextMenuStrip is not { } menu) return;
         menu.Items.Clear();
         menu.Items.Add(L.T("tray.open"), null, (_, _) => ShowMain());
+        menu.Items.Add(L.T("tray.quickAdd"), null, (_, _) => QuickAddWindow.Open());
         menu.Items.Add(L.T("tray.snooze"), null, (_, _) => Guard.SnoozedUntil = DateTime.Now.AddMinutes(15));
         menu.Items.Add("-");
         menu.Items.Add(L.T("tray.quit"), null, (_, _) => Quit());
@@ -165,6 +176,9 @@ public partial class App : Application
         MainWin.Activate();
     }
 
+    /// <summary>Les données ont changé ailleurs que dans la page affichée (capture rapide, rappel…) : elle se remet à jour.</summary>
+    public void Refreshed() => (MainWin?.Host.Content as Views.IRefreshable)?.Refresh();
+
     private void CreateTray()
     {
         var iconStream = GetResourceStream(new Uri("pack://application:,,,/Assets/kairn.ico"))?.Stream;
@@ -186,6 +200,7 @@ public partial class App : Application
     public void Quit()
     {
         Guard.Stop();
+        HotKey.Unregister();
         Storage.Save();
         if (_tray != null) { _tray.Visible = false; _tray.Dispose(); }
         Shutdown();

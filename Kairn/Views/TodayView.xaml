@@ -20,6 +20,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- ===== En-tête ===== -->
@@ -38,11 +39,22 @@
                 <!-- Le cairn : une pierre par tâche accomplie. On montre ce qui est fait, jamais ce qui manque. -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Margin="0,0,20,0">
+                        <!-- Ne montrer que l'essentiel : de quoi ne plus être submergé quand la journée est chargée -->
+                        <ToggleButton x:Name="FocusToggle" Style="{StaticResource FocusChip}" HorizontalAlignment="Right"
+                                      Margin="0,0,0,8" Click="FocusToggle_Click" ToolTip="{l:T today.focus.tip}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE7B3;" FontSize="11" Margin="0,0,7,0"/>
+                                <TextBlock Text="{l:T today.focus}"/>
+                            </StackPanel>
+                        </ToggleButton>
                         <TextBlock x:Name="DoneText" HorizontalAlignment="Right" FontSize="18" FontWeight="SemiBold"/>
                         <TextBlock x:Name="FocusTimeText" HorizontalAlignment="Right" FontSize="13" Foreground="{DynamicResource SubtleBrush}" Margin="0,4,0,0"/>
                         <TextBlock x:Name="WeekText" HorizontalAlignment="Right" FontSize="13" Foreground="{DynamicResource SubtleBrush}" Margin="0,2,0,0"/>
+                        <!-- Le sentier : tout ce qui a été fait depuis le début. Ça ne fait que monter. -->
+                        <TextBlock x:Name="PathText" HorizontalAlignment="Right" FontSize="11.5" Margin="0,6,0,0"
+                                   Foreground="{DynamicResource FaintBrush}"/>
                     </StackPanel>
-                    <Canvas x:Name="Cairn" Width="84" Height="96" ClipToBounds="False"/>
+                    <Canvas x:Name="Cairn" Width="84" Height="112" ClipToBounds="False"/>
                 </StackPanel>
             </Grid>
 
@@ -76,6 +88,37 @@
                         </StackPanel>
                         <TextBlock x:Name="NowTitle" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap"/>
                         <TextBlock x:Name="NowNotes" Style="{StaticResource Subtle}" FontSize="14" Margin="0,10,0,0" LineHeight="21"/>
+
+                        <!-- Les étapes : la seule chose à regarder quand la tâche entière paraît infaisable.
+                             La prochaine non faite est mise en avant, les autres attendent tranquillement. -->
+                        <StackPanel x:Name="NowStepsBox" Margin="0,16,0,0" Visibility="Collapsed">
+                            <DockPanel Margin="0,0,0,8">
+                                <TextBlock x:Name="NowStepsCount" DockPanel.Dock="Right" FontSize="12"
+                                           Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{l:T steps.title}" Style="{StaticResource Label}" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <ItemsControl x:Name="NowSteps">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border x:Name="srow" Padding="10,7" Margin="0,0,0,4" CornerRadius="{DynamicResource RadiusSmall}"
+                                                Background="Transparent">
+                                            <StackPanel Orientation="Horizontal">
+                                                <CheckBox Style="{StaticResource RoundCheck}" IsChecked="{Binding Done}" VerticalAlignment="Center"
+                                                          Click="Step_Click" Tag="{Binding}" Margin="0,0,12,0"/>
+                                                <TextBlock x:Name="stitle" Text="{Binding Title}" TextWrapping="Wrap" VerticalAlignment="Center"
+                                                           MaxWidth="460"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Done}" Value="True">
+                                                <Setter TargetName="srow" Property="Opacity" Value="0.42"/>
+                                                <Setter TargetName="stitle" Property="TextDecorations" Value="Strikethrough"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
 
                         <!-- Ressources de la catégorie, à portée de main -->
                         <!-- Ce qu'il faut ouvrir pour cette tâche : un clic et c'est parti -->
@@ -137,8 +180,61 @@
                 </StackPanel>
             </Border>
 
+            <!-- ===== L'essentiel : deux ou trois choses, le reste peut attendre ===== -->
+            <Border x:Name="EssentialCard" Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed"
+                    BorderBrush="{DynamicResource AccentSoftBrush}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE735;" Foreground="{DynamicResource AccentBrush}" Margin="0,0,10,0"/>
+                        <TextBlock Text="{l:T today.essential.title}" Style="{StaticResource H2}" FontSize="16"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Subtle}" Margin="0,4,0,12" Text="{l:T today.essential.sub}"/>
+                    <ItemsControl x:Name="EssentialList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="erow" Background="{DynamicResource Surface2Brush}" CornerRadius="{DynamicResource RadiusSmall}"
+                                        Padding="14,11" Margin="0,0,0,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox Style="{StaticResource RoundCheck}" IsChecked="{Binding Done}" VerticalAlignment="Center"
+                                                  Click="Check_Click" Tag="{Binding}" Margin="0,0,14,0"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Emoji}" FontFamily="Segoe UI Emoji" FontSize="14" Margin="0,0,8,0"
+                                                           VerticalAlignment="Center"
+                                                           Visibility="{Binding HasEmoji, Converter={StaticResource BoolToVis}}"/>
+                                                <TextBlock x:Name="etitle" Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                                <TextBlock Text="{Binding SlotText}" FontSize="12" Foreground="{DynamicResource SubtleBrush}"/>
+                                                <TextBlock Text="{Binding StepsText}" FontSize="12" Margin="10,0,0,0"
+                                                           Foreground="{DynamicResource AccentBrush}"
+                                                           Visibility="{Binding HasSteps, Converter={StaticResource BoolToVis}}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Style="{StaticResource IconButton}" Width="28" Height="28" FontSize="12"
+                                                Content="&#xE735;" Foreground="{DynamicResource AccentBrush}" Tag="{Binding}"
+                                                Click="Unpin_Click" ToolTip="{l:T today.essential.remove}"/>
+                                    </Grid>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Done}" Value="True">
+                                        <Setter TargetName="erow" Property="Opacity" Value="0.5"/>
+                                        <Setter TargetName="etitle" Property="TextDecorations" Value="Strikethrough"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <!-- ===== À reprendre : ce qui n'a pas pu être fini avant ===== -->
-            <Border x:Name="CarryCard" Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed">
+            <Border x:Name="CarryCard" Grid.Row="3" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource Icon}" Text="&#xE72A;" Foreground="{DynamicResource AccentBrush}" Margin="0,0,10,0"/>
@@ -158,7 +254,7 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <CheckBox Style="{StaticResource RoundCheck}" IsChecked="{Binding Done}" VerticalAlignment="Center"
-                                                  Click="Check_Click" Margin="0,0,14,0"/>
+                                                  Click="Check_Click" Tag="{Binding}" Margin="0,0,14,0"/>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock x:Name="ctitle" Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
                                             <TextBlock Text="{Binding CarriedText}" FontSize="12" Foreground="{DynamicResource SubtleBrush}" Margin="0,2,0,0"/>
@@ -185,7 +281,7 @@
             </Border>
 
             <!-- ===== Programme du jour ===== -->
-            <DockPanel Grid.Row="3" Margin="0,0,0,12" x:Name="ListHeader">
+            <DockPanel Grid.Row="4" Margin="0,0,0,12" x:Name="ListHeader">
                 <TextBlock x:Name="Feedback" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="0,0,12,0"
                            Foreground="{DynamicResource AccentBrush}" FontSize="13"/>
                 <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Click="Plan_Click" Padding="10,6">
@@ -197,7 +293,7 @@
                 <TextBlock Text="{l:T today.program}" Style="{StaticResource H2}" VerticalAlignment="Center"/>
             </DockPanel>
 
-            <ItemsControl x:Name="TaskList" Grid.Row="4" Focusable="False">
+            <ItemsControl x:Name="TaskList" Grid.Row="5" Focusable="False">
                 <ItemsControl.GroupStyle>
                     <GroupStyle>
                         <GroupStyle.HeaderTemplate>
@@ -215,13 +311,20 @@
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="110"/>
                                     <ColumnDefinition/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <CheckBox Style="{StaticResource RoundCheck}" IsChecked="{Binding Done}" VerticalAlignment="Top"
-                                          Click="Check_Click" Margin="0,0,16,0"/>
-                                <StackPanel Grid.Column="1" Margin="0,2,0,0">
+                                <!-- Liseré d'importance : se lit du coin de l'œil, sans rien avoir à déchiffrer -->
+                                <Border x:Name="stripe" Width="3" CornerRadius="2" Margin="0,1,13,1" Background="Transparent"/>
+                                <CheckBox x:Name="check" Grid.Column="1" Style="{StaticResource RoundCheck}" IsChecked="{Binding Done}" VerticalAlignment="Top"
+                                          Click="Check_Click" Tag="{Binding}" Margin="0,0,16,0"/>
+                                <!-- Un rendez-vous venu d'iCloud ne se coche pas : il ne nous appartient pas. -->
+                                <TextBlock x:Name="extIcon" Grid.Column="1" Style="{StaticResource Icon}" Text="&#xE787;" FontSize="13"
+                                           Foreground="{DynamicResource SubtleBrush}" VerticalAlignment="Top" Margin="2,2,16,0"
+                                           Visibility="Collapsed"/>
+                                <StackPanel Grid.Column="2" Margin="0,2,0,0">
                                     <TextBlock Text="{Binding TimeRange}" FontSize="13" Foreground="{DynamicResource SubtleBrush}"/>
                                     <TextBlock Text="{Binding DurationText}" FontSize="11.5" Foreground="{DynamicResource FaintBrush}" Margin="0,2,0,0"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,3,0,0" ToolTip="{l:T rhythm.badge.tip}"
@@ -230,12 +333,29 @@
                                         <TextBlock Text="{Binding RhythmBadge}" FontSize="11.5" Foreground="{DynamicResource AccentBrush}"/>
                                     </StackPanel>
                                 </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock x:Name="title" Text="{Binding Title}" FontSize="14.5" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,1,0,0"/>
+                                <StackPanel Grid.Column="3">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Emoji}" FontFamily="Segoe UI Emoji" FontSize="15" Margin="0,0,9,0"
+                                                   VerticalAlignment="Center"
+                                                   Visibility="{Binding HasEmoji, Converter={StaticResource BoolToVis}}"/>
+                                        <TextBlock x:Name="title" Text="{Binding Title}" FontSize="14.5" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,1,0,0"/>
+                                    </StackPanel>
                                     <TextBlock Text="{Binding Notes}" Style="{StaticResource Subtle}" Margin="0,5,0,0" LineHeight="19"
                                                Visibility="{Binding HasNotes, Converter={StaticResource BoolToVis}}"/>
+                                    <!-- Étapes : on voit d'un coup d'œil qu'il y a une porte d'entrée, et combien en reste -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
+                                                Visibility="{Binding HasSteps, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE9D5;" FontSize="10.5"
+                                                   Foreground="{DynamicResource AccentBrush}" Margin="0,1,6,0"/>
+                                        <TextBlock Text="{Binding StepsText}" FontSize="11.5" Foreground="{DynamicResource AccentBrush}"/>
+                                        <TextBlock Text="{Binding NextStep.Title}" FontSize="11.5" Margin="8,0,0,0" MaxWidth="320"
+                                                   TextTrimming="CharacterEllipsis" Foreground="{DynamicResource SubtleBrush}"/>
+                                    </StackPanel>
                                 </StackPanel>
-                                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,2,0,0">
+                                <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,2,0,0">
+                                    <Button x:Name="pin" Style="{StaticResource IconButton}" Width="26" Height="26" FontSize="11"
+                                            Content="&#xE734;" Margin="0,-2,6,0" Visibility="Hidden" Tag="{Binding}"
+                                            Click="Pin_Click" ToolTip="{l:T today.essential.add}"/>
                                     <Button x:Name="postpone" Style="{StaticResource Ghost}" Padding="8,3" Margin="0,-3,6,0" FontSize="12"
                                             Visibility="Collapsed" Tag="{Binding}" Click="PostponeRow_Click"
                                             ToolTip="{l:T today.row.postpone.tip}">
@@ -249,6 +369,11 @@
                                         <TextBlock Text="{l:T today.row.break}" FontSize="11" Foreground="{DynamicResource BreakBrush}"/>
                                     </Border>
                                     <Border Padding="8,2" CornerRadius="{DynamicResource RadiusPill}" Background="{DynamicResource Surface2Brush}"
+                                            Margin="0,0,6,0" Visibility="{Binding ExternalCalendar, Converter={StaticResource NotNullVis}}"
+                                            ToolTip="{l:T cal.external.tip}">
+                                        <TextBlock Text="{Binding ExternalCalendar}" FontSize="11" Foreground="{DynamicResource SubtleBrush}"/>
+                                    </Border>
+                                    <Border Padding="8,2" CornerRadius="{DynamicResource RadiusPill}" Background="{DynamicResource Surface2Brush}"
                                             Visibility="{Binding CategoryId, Converter={StaticResource NotNullVis}}">
                                         <StackPanel Orientation="Horizontal">
                                             <Ellipse Width="6" Height="6" Fill="{Binding CategoryId, Converter={StaticResource CatBrush}}" Margin="0,0,6,0"/>
@@ -260,8 +385,27 @@
                             </Grid>
                         </Border>
                         <DataTemplate.Triggers>
+                            <Trigger SourceName="row" Property="IsMouseOver" Value="True">
+                                <Setter TargetName="pin" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <!-- Dans « L'essentiel » : un trait net à gauche. C'est le seul repère d'importance. -->
+                            <DataTrigger Binding="{Binding Pinned}" Value="True">
+                                <Setter TargetName="stripe" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="pin" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="pin" Property="Content" Value="&#xE735;"/>
+                                <Setter TargetName="pin" Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                            </DataTrigger>
                             <DataTrigger Binding="{Binding IsBreak}" Value="True">
                                 <Setter TargetName="breakTag" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="pin" Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                            <!-- Rendez-vous iCloud : ni case, ni étoile, ni report. Kairn l'affiche et le contourne, point. -->
+                            <DataTrigger Binding="{Binding IsExternal}" Value="True">
+                                <Setter TargetName="check" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="extIcon" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="pin" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="postpone" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="row" Property="Background" Value="{DynamicResource Surface2Brush}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsPast}" Value="True">
                                 <Setter TargetName="row" Property="Opacity" Value="0.72"/>
@@ -271,6 +415,7 @@
                                     <Condition Binding="{Binding IsPast}" Value="True"/>
                                     <Condition Binding="{Binding Done}" Value="False"/>
                                     <Condition Binding="{Binding IsBreak}" Value="False"/>
+                                    <Condition Binding="{Binding IsExternal}" Value="False"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter TargetName="postpone" Property="Visibility" Value="Visible"/>
                                 <Setter TargetName="row" Property="Opacity" Value="0.85"/>

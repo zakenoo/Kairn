@@ -46,6 +46,79 @@
                 </StackPanel>
             </Border>
 
+            <!-- ===== Rappels, récompenses et capture rapide ===== -->
+            <TextBlock Text="{l:T set.nudges}" Style="{StaticResource Label}"/>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="{l:T set.remind.default}" FontWeight="SemiBold"/>
+                    <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,3,0,10" TextWrapping="Wrap"
+                               Text="{l:T set.remind.default.sub}"/>
+                    <WrapPanel x:Name="DefaultReminderChips"/>
+
+                    <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,8,0,14"/>
+
+                    <CheckBox x:Name="DoneSoundSwitch" Style="{StaticResource Switch}" Content="{l:T set.doneSound}" Click="DoneSound_Click"/>
+                    <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap" Text="{l:T set.doneSound.sub}"/>
+                    <CheckBox x:Name="CelebrateSwitch" Style="{StaticResource Switch}" Margin="0,14,0,0" Content="{l:T set.celebrate}" Click="Celebrate_Click"/>
+                    <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap" Text="{l:T set.celebrate.sub}"/>
+
+                    <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,14,0,14"/>
+
+                    <CheckBox x:Name="HotkeySwitch" Style="{StaticResource Switch}" Content="{l:T set.hotkey}" Click="Hotkey_Click"/>
+                    <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap" Text="{l:T set.hotkey.sub}"/>
+                    <TextBlock x:Name="HotkeyStatus" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
+                               Foreground="{DynamicResource DangerBrush}" Visibility="Collapsed" Text="{l:T set.hotkey.taken}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ===== Calendrier iCloud ===== -->
+            <TextBlock Text="{l:T set.cal}" Style="{StaticResource Label}"/>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
+                <StackPanel>
+                    <!-- Pas encore relié -->
+                    <StackPanel x:Name="CalSetup">
+                        <TextBlock Text="{l:T set.cal.title}" FontWeight="SemiBold"/>
+                        <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,3,0,10" TextWrapping="Wrap"
+                                   Text="{l:T set.cal.sub}"/>
+                        <TextBox x:Name="CalUser" Tag="{l:T set.cal.user}"/>
+                        <PasswordBox x:Name="CalPassword" Margin="0,8,0,0" KeyDown="CalPassword_KeyDown"/>
+                        <TextBlock Text="{l:T set.cal.password}" FontSize="11" Foreground="{DynamicResource FaintBrush}" Margin="2,3,0,0"
+                                   TextWrapping="Wrap"/>
+                        <Button Style="{StaticResource Ghost}" HorizontalAlignment="Left" Padding="0,6" Margin="0,2,0,0" FontSize="12"
+                                Content="{l:T set.cal.appPassword}" Click="CalAppPassword_Click"/>
+                        <Button x:Name="CalLinkBtn" Style="{StaticResource Primary}" Margin="0,10,0,0" HorizontalAlignment="Left"
+                                Content="{l:T set.cal.link}" Click="CalLink_Click"/>
+                    </StackPanel>
+
+                    <!-- Relié : on choisit quoi afficher, et si on renvoie ses tâches -->
+                    <StackPanel x:Name="CalLinked" Visibility="Collapsed">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Padding="10,5" FontSize="12"
+                                    Content="{l:T set.cal.unlink}" Click="CalUnlink_Click" Foreground="{DynamicResource DangerBrush}"/>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Padding="10,5" FontSize="12" Margin="0,0,8,0"
+                                    Content="{l:T set.cal.refresh}" Click="CalRefresh_Click"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Name="CalAccount" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="CalLastSync" Style="{StaticResource Subtle}" FontSize="12" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <TextBlock Text="{l:T set.cal.show}" Style="{StaticResource Label}" Margin="0,16,0,4"/>
+                        <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,0,0,6" TextWrapping="Wrap"
+                                   Text="{l:T set.cal.show.sub}"/>
+                        <WrapPanel x:Name="CalList"/>
+
+                        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,12,0,14"/>
+
+                        <CheckBox x:Name="CalPushSwitch" Style="{StaticResource Switch}" Content="{l:T set.cal.push}" Click="CalPush_Click"/>
+                        <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
+                                   Text="{l:T set.cal.push.sub}"/>
+                    </StackPanel>
+
+                    <TextBlock x:Name="CalStatus" FontSize="12.5" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+                </StackPanel>
+            </Border>
+
             <!-- ===== Assistant d'objectifs ===== -->
             <TextBlock Text="{l:T set.ai}" Style="{StaticResource Label}"/>
             <Border Style="{StaticResource Card}" Margin="0,0,0,12">

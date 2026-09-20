@@ -35,8 +35,11 @@
             <Border Style="{StaticResource Card}" Padding="16" Margin="0,16,0,0">
                 <StackPanel>
                     <TextBlock Text="{l:T plan.ics.title}" Style="{StaticResource Label}"/>
-                    <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,0,0,12"
+                    <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,0,0,10"
                                Text="{l:T plan.ics.sub}"/>
+                    <!-- La vraie liaison iCloud vit dans les Réglages : ici c'est le fichier, ponctuel. -->
+                    <Button Style="{StaticResource Ghost}" HorizontalAlignment="Left" Padding="0,4" Margin="0,0,0,8" FontSize="12"
+                            Content="{l:T plan.ics.live}" Click="CalendarSettings_Click"/>
                     <UniformGrid Columns="2">
                         <Button Margin="0,0,4,0" Click="Import_Click">
                             <StackPanel Orientation="Horizontal">
@@ -64,9 +67,21 @@
             </Grid.RowDefinitions>
 
             <StackPanel Margin="0,0,0,16">
-                <TextBlock x:Name="DayLabel" Style="{StaticResource Label}" TextTrimming="CharacterEllipsis"/>
+                <DockPanel>
+                    <!-- Trois façons de regarder la même chose : la liste du jour, la semaine posée à plat,
+                         ou un tableau à colonnes. Selon les jours, ce n'est pas la même qui aide. -->
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ToggleButton x:Name="ViewDay" Style="{StaticResource FocusChip}" Margin="0,0,6,0" Tag="day"
+                                      Click="View_Click" Content="{l:T plan.view.day}"/>
+                        <ToggleButton x:Name="ViewWeek" Style="{StaticResource FocusChip}" Margin="0,0,6,0" Tag="week"
+                                      Click="View_Click" Content="{l:T plan.view.week}"/>
+                        <ToggleButton x:Name="ViewBoard" Style="{StaticResource FocusChip}" Tag="board"
+                                      Click="View_Click" Content="{l:T plan.view.board}"/>
+                    </StackPanel>
+                    <TextBlock x:Name="DayLabel" Style="{StaticResource Label}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                </DockPanel>
                 <TextBlock x:Name="DayTitle" Style="{StaticResource H1}" FontSize="24" Margin="0,0,0,14"/>
-                <StackPanel Orientation="Horizontal">
+                <StackPanel x:Name="DayActions" Orientation="Horizontal">
                     <Button Style="{StaticResource Primary}" Click="Add_Click">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,8,0"/>
@@ -105,7 +120,11 @@
             </Border>
 
             <!-- Éditeur de tâche -->
-            <Border x:Name="Editor" Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,16" Visibility="Collapsed"
+            <!-- L'éditeur prend la place restante et défile : sur un écran court, les boutons
+                 « Enregistrer » et « Supprimer » doivent rester atteignables. -->
+            <ScrollViewer x:Name="Editor" Grid.Row="2" VerticalScrollBarVisibility="Auto" Visibility="Collapsed"
+                          Padding="0,0,4,0">
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16" VerticalAlignment="Top"
                     BorderBrush="{DynamicResource AccentBrush}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -138,10 +157,53 @@
                         <TextBlock Text="{l:T plan.ed.notes}" Style="{StaticResource Label}"/>
                         <TextBox x:Name="EdNotes" VerticalContentAlignment="Top" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="160"
                                  VerticalScrollBarVisibility="Auto" Tag="{l:T plan.ed.notes.ph}"/>
+
+                        <!-- Les étapes : découper jusqu'à ce que la première ne fasse plus peur.
+                             Une tâche avec une première étape ridiculement petite est une tâche qui démarre. -->
+                        <DockPanel Margin="0,16,0,6">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Padding="8,4" FontSize="12"
+                                    Click="StepsFromNotes_Click" ToolTip="{l:T steps.fromNotes.tip}" Content="{l:T steps.fromNotes}"/>
+                            <TextBlock Text="{l:T steps.title}" Style="{StaticResource Label}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <ItemsControl x:Name="EdSteps">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox Style="{StaticResource RoundCheck}" IsChecked="{Binding Done}" VerticalAlignment="Center"
+                                                  Click="EdStep_Click" Margin="0,0,10,0"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}"
+                                                 Tag="{l:T steps.placeholder}" KeyDown="EdStepBox_KeyDown"/>
+                                        <Button Grid.Column="2" Style="{StaticResource IconButton}" Width="26" Height="26" FontSize="10"
+                                                Content="&#xE74D;" Margin="6,0,0,0" Tag="{Binding}" Click="StepDelete_Click"
+                                                ToolTip="{l:T steps.remove}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <DockPanel Margin="0,2,0,0">
+                            <Button DockPanel.Dock="Right" Margin="6,0,0,0" Content="{l:T common.add}" Click="StepAdd_Click"/>
+                            <TextBox x:Name="StepBox" Tag="{l:T steps.add.ph}" KeyDown="StepBox_KeyDown"/>
+                        </DockPanel>
                     </StackPanel>
                     <StackPanel Grid.Row="2" Grid.ColumnSpan="5" Margin="0,14,0,0">
                         <TextBlock Text="{l:T plan.ed.category}" Style="{StaticResource Label}"/>
                         <WrapPanel x:Name="EdCategories"/>
+
+                        <!-- Se reconnaître sans lire. Rien d'autre à décider ici : il n'y a pas de niveau
+                             d'importance à choisir, l'étoile de « L'essentiel » suffit. -->
+                        <TextBlock Text="{l:T plan.ed.emoji}" Style="{StaticResource Label}" Margin="0,10,0,0"/>
+                        <WrapPanel x:Name="EdEmojis"/>
+
+                        <!-- Rappels : autant qu'on veut, parce qu'un seul arrive toujours au mauvais moment -->
+                        <TextBlock Text="{l:T remind.title}" Style="{StaticResource Label}" Margin="0,10,0,4"/>
+                        <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,0,0,6" TextWrapping="Wrap"
+                                   Text="{l:T remind.sub}"/>
+                        <WrapPanel x:Name="EdReminders"/>
 
                         <TextBlock Text="{l:T plan.ed.links}" Style="{StaticResource Label}" Margin="0,8,0,6"/>
                         <WrapPanel x:Name="EdLinks"/>
@@ -180,6 +242,8 @@
                                   Content="{l:T plan.ed.isBreak}"/>
                         <CheckBox x:Name="EdFloating" Style="{StaticResource Switch}" HorizontalAlignment="Left" Margin="0,10,0,0"
                                   Content="{l:T plan.ed.floating}"/>
+                        <CheckBox x:Name="EdPinned" Style="{StaticResource Switch}" HorizontalAlignment="Left" Margin="0,10,0,0"
+                                  Content="{l:T plan.ed.pinned}" ToolTip="{l:T plan.ed.pinned.tip}"/>
                         <DockPanel Margin="0,16,0,0" LastChildFill="False">
                             <Button x:Name="EdDelete" DockPanel.Dock="Left" Style="{StaticResource Ghost}" Click="Delete_Click"
                                     Foreground="{DynamicResource DangerBrush}" Content="{l:T common.delete}"/>
@@ -191,6 +255,7 @@
                                Visibility="Collapsed"/>
                 </Grid>
             </Border>
+            </ScrollViewer>
 
             <!-- Collage d'un programme texte -->
             <Border x:Name="PastePanel" Grid.Row="1" Grid.RowSpan="2" Style="{StaticResource Card}" Visibility="Collapsed">
@@ -270,7 +335,9 @@
                             <DataTemplate>
                                 <Border x:Name="row" Background="{DynamicResource ZoneRowBrush}" BorderBrush="{DynamicResource LineBrush}"
                                         BorderThickness="{DynamicResource CardBorder}" CornerRadius="{DynamicResource Radius}" Padding="14,11" Margin="0,0,0,8"
-                                        Cursor="Hand" MouseLeftButtonDown="Press" MouseLeftButtonUp="Row_Click" Tag="{Binding}">
+                                        Cursor="Hand" MouseLeftButtonDown="Press" MouseLeftButtonUp="Row_Click" Tag="{Binding}"
+                                        PreviewMouseMove="Row_MouseMove" AllowDrop="True" DragOver="Row_DragOver"
+                                        DragLeave="Row_DragLeave" Drop="Row_Drop">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="4"/>
@@ -290,6 +357,15 @@
                                                        Visibility="{Binding HasNotes, Converter={StaticResource BoolToVis}}"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,1,0,0">
+                                            <Border x:Name="ext" Visibility="Collapsed" Padding="8,2" Margin="0,0,10,0"
+                                                    CornerRadius="{DynamicResource RadiusPill}" Background="{DynamicResource Surface2Brush}"
+                                                    ToolTip="{l:T cal.external.tip}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE787;" FontSize="10.5"
+                                                               Foreground="{DynamicResource SubtleBrush}" Margin="0,1,5,0"/>
+                                                    <TextBlock Text="{Binding ExternalCalendar}" FontSize="11" Foreground="{DynamicResource SubtleBrush}"/>
+                                                </StackPanel>
+                                            </Border>
                                             <StackPanel Orientation="Horizontal" Margin="0,0,10,0" ToolTip="{l:T rhythm.badge.tip}"
                                                         Visibility="{Binding RhythmBadge, Converter={StaticResource NotNullVis}}">
                                                 <TextBlock Style="{StaticResource Icon}" Text="&#xE916;" FontSize="11" Foreground="{DynamicResource AccentBrush}" Margin="0,1,5,0"/>
@@ -312,6 +388,12 @@
                                         <Setter TargetName="slot" Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                                         <Setter TargetName="row" Property="BorderBrush" Value="{DynamicResource AccentSoftBrush}"/>
                                     </DataTrigger>
+                                    <!-- Rendez-vous iCloud : il occupe le créneau, mais rien ici ne peut le modifier. -->
+                                    <DataTrigger Binding="{Binding IsExternal}" Value="True">
+                                        <Setter TargetName="del" Property="Visibility" Value="Collapsed"/>
+                                        <Setter TargetName="row" Property="Background" Value="{DynamicResource Surface2Brush}"/>
+                                        <Setter TargetName="ext" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
                                     <DataTrigger Binding="{Binding Done}" Value="True">
                                         <Setter TargetName="title" Property="TextDecorations" Value="Strikethrough"/>
                                         <Setter TargetName="row" Property="Opacity" Value="0.55"/>
@@ -322,6 +404,38 @@
                     </ItemsControl>
                 </StackPanel>
             </ScrollViewer>
+            <!-- Semaine : les sept jours posés à plat, les blocs à leur heure. On fait glisser pour déplacer. -->
+            <Grid x:Name="WeekPane" Grid.Row="2" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <DockPanel Margin="0,0,0,8">
+                    <!-- Changer de semaine sans passer par le calendrier de gauche -->
+                    <Button DockPanel.Dock="Left" Style="{StaticResource IconButton}" Width="30" Height="30" Content="&#xE76B;"
+                            Click="PrevWeek_Click" ToolTip="{l:T plan.week.prev}"/>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Width="30" Height="30" Content="&#xE76C;"
+                            Click="NextWeek_Click" ToolTip="{l:T plan.week.next}"/>
+                    <UniformGrid x:Name="WeekHeads" Columns="7" Margin="16,0,16,0"/>
+                </DockPanel>
+                <ScrollViewer Grid.Row="1" x:Name="WeekScroll" VerticalScrollBarVisibility="Auto">
+                    <!-- Un peu d'air en haut : sinon l'étiquette de la première heure est coupée -->
+                    <Grid VerticalAlignment="Top" Margin="0,8,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="46"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Canvas x:Name="WeekHours" VerticalAlignment="Top"/>
+                        <UniformGrid x:Name="WeekDays" Grid.Column="1" Columns="7" VerticalAlignment="Top"/>
+                    </Grid>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Tableau : trois colonnes, on déplace d'un état à l'autre sans jamais rien saisir. -->
+            <Grid x:Name="BoardPane" Grid.Row="2" Visibility="Collapsed">
+                <UniformGrid x:Name="BoardColumns" Columns="3"/>
+            </Grid>
+
             <l:UndoBar x:Name="Undo" Grid.Row="2"/>
         </Grid>
     </Grid>

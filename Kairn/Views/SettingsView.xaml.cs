@@ -23,12 +23,68 @@ public partial class SettingsView : UserControl, IRefreshable
         NameBox.Text = S.UserName ?? "";
 
         BuildRhythm();
+        BuildNudges();
+        BuildCalendar();
         BuildAssistant();
         BuildUpdates();
         StartupSwitch.IsChecked = S.StartWithWindows;
         TraySwitch.IsChecked = S.CloseToTray;
         DataPath.Text = Storage.Root;
     }
+
+    // ===================== Rappels, récompenses, capture rapide =====================
+
+    private void BuildNudges()
+    {
+        DefaultReminderChips.Children.Clear();
+        foreach (var m in Reminders.Choices)
+        {
+            var cb = new CheckBox
+            {
+                Content = PlanningView.ReminderLabel(m), Tag = m,
+                IsChecked = S.DefaultReminders.Contains(m), Padding = new Thickness(0)
+            };
+            cb.SetResourceReference(StyleProperty, "ChipCheck");
+            cb.Click += (_, _) =>
+            {
+                S.DefaultReminders = [.. DefaultReminderChips.Children.OfType<CheckBox>()
+                    .Where(c => c.IsChecked == true).Select(c => (int)c.Tag!).OrderByDescending(x => x)];
+                Storage.SaveSettings();
+            };
+            DefaultReminderChips.Children.Add(cb);
+        }
+
+        DoneSoundSwitch.IsChecked = S.DoneSound;
+        CelebrateSwitch.IsChecked = S.Celebrate;
+        HotkeySwitch.IsChecked = S.QuickAddHotkey;
+        UpdateHotkeyStatus();
+    }
+
+    private void DoneSound_Click(object sender, RoutedEventArgs e)
+    {
+        S.DoneSound = DoneSoundSwitch.IsChecked == true;
+        Storage.SaveSettings();
+        if (S.DoneSound) Celebrate.Task(); // on entend tout de suite ce qu'on vient d'activer
+    }
+
+    private void Celebrate_Click(object sender, RoutedEventArgs e)
+    {
+        S.Celebrate = CelebrateSwitch.IsChecked == true;
+        Storage.SaveSettings();
+        if (S.Celebrate) Celebrate.Confetti(CelebrateSwitch);
+    }
+
+    private void Hotkey_Click(object sender, RoutedEventArgs e)
+    {
+        S.QuickAddHotkey = HotkeySwitch.IsChecked == true;
+        Storage.SaveSettings();
+        HotKey.Apply(QuickAddWindow.Open);
+        UpdateHotkeyStatus();
+    }
+
+    /// <summary>Une autre app peut déjà utiliser Ctrl+Alt+K : mieux vaut le dire que laisser croire que ça marche.</summary>
+    private void UpdateHotkeyStatus() =>
+        HotkeyStatus.Visibility = S.QuickAddHotkey && !HotKey.Registered ? Visibility.Visible : Visibility.Collapsed;
 
     // ===================== Langue =====================
 

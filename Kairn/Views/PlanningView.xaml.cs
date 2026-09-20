@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -40,8 +41,10 @@ public partial class PlanningView : UserControl, IRefreshable
     {
         BuildMonth();
         var tasks = Storage.TasksFor(_selected).ToList();
+        TaskList.ItemsSource = null;
         TaskList.ItemsSource = tasks;
         EmptyText.Visibility = tasks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ApplyView();
 
         var title = _selected.ToString("dddd d MMMM", Fr);
         DayTitle.Text = char.ToUpper(title[0]) + title[1..];
@@ -49,6 +52,38 @@ public partial class PlanningView : UserControl, IRefreshable
         var work = tasks.Where(t => !t.IsBreak).Aggregate(TimeSpan.Zero, (a, t) => a + Rhythm.WorkTime(t));
         DayLabel.Text = (diff switch { 0 => L.T("plan.day.today"), 1 => L.T("plan.day.tomorrow"), -1 => L.T("plan.day.yesterday"), > 0 => L.F("plan.day.inDays", diff), _ => L.F("plan.day.daysAgo", -diff) })
                         + (tasks.Count > 0 ? L.F("plan.day.summary", tasks.Count, PlanTask.FormatDuration(work).ToUpper(Fr)) : "");
+    }
+
+    // ===================== Jour / Semaine / Tableau =====================
+
+    private string View => Storage.Settings.PlanView is "week" or "board" ? Storage.Settings.PlanView : "day";
+
+    private void View_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleButton { Tag: string key }) return;
+        Storage.Settings.PlanView = key;
+        Storage.SaveSettings();
+        CloseEditors();
+        Refresh();
+    }
+
+    /// <summary>Montre la vue choisie et construit ce qu'il faut. Les panneaux d'édition restent au-dessus, quelle que soit la vue.</summary>
+    private void ApplyView()
+    {
+        var view = View;
+        ViewDay.IsChecked = view == "day";
+        ViewWeek.IsChecked = view == "week";
+        ViewBoard.IsChecked = view == "board";
+
+        bool editing = Editor.Visibility == Visibility.Visible
+                    || PastePanel.Visibility == Visibility.Visible;
+
+        ListScroll.Visibility = view == "day" && !editing ? Visibility.Visible : Visibility.Collapsed;
+        WeekPane.Visibility = view == "week" && !editing ? Visibility.Visible : Visibility.Collapsed;
+        BoardPane.Visibility = view == "board" && !editing ? Visibility.Visible : Visibility.Collapsed;
+
+        if (WeekPane.Visibility == Visibility.Visible) BuildWeek();
+        if (BoardPane.Visibility == Visibility.Visible) BuildBoard();
     }
 
     // ===================== Calendrier =====================
@@ -107,6 +142,23 @@ public partial class PlanningView : UserControl, IRefreshable
                 cell.MouseEnter += (_, _) => cell.SetResourceReference(Border.BackgroundProperty, "HoverBrush");
                 cell.MouseLeave += (_, _) => cell.Background = Brushes.Transparent;
             }
+            // Déposer une tâche sur un jour du calendrier : la manière la plus rapide de dire « pas aujourd'hui ».
+            cell.AllowDrop = true;
+            cell.DragOver += (_, e) =>
+            {
+                e.Effects = TaskDrag.From(e.Data) is null ? DragDropEffects.None : DragDropEffects.Move;
+                if (e.Effects != DragDropEffects.None) cell.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
+                e.Handled = true;
+            };
+            cell.DragLeave += (_, _) => { if (!isSel) cell.BorderBrush = Brushes.Transparent; };
+            cell.Drop += (_, e) =>
+            {
+                if (!isSel) cell.BorderBrush = Brushes.Transparent;
+                if (TaskDrag.From(e.Data) is not { } moved) return;
+                e.Handled = true;
+                TaskDrag.MoveToDay(moved, d);
+                Refresh();
+            };
             Click.Attach(cell, () => DayClicked(d));
             DaysGrid.Children.Add(cell);
         }
@@ -134,11 +186,71 @@ public partial class PlanningView : UserControl, IRefreshable
         OpenEditor(new PlanTask { Date = _selected, Start = start, End = start + TimeSpan.FromHours(1), CategoryId = last?.CategoryId }, isNew: true);
     }
 
-    private void Press(object sender, MouseButtonEventArgs e) => Click.Down(sender);
+    private void Press(object sender, MouseButtonEventArgs e)
+    {
+        Click.Down(sender);
+        _dragFrom = e.GetPosition(this);
+    }
 
     private void Row_Click(object sender, MouseButtonEventArgs e)
     {
-        if (Click.Up(sender) && sender is FrameworkElement { Tag: PlanTask t }) OpenEditor(t, isNew: false);
+        if (!Click.Up(sender) || sender is not FrameworkElement { Tag: PlanTask t }) return;
+        // Un rendez-vous iCloud ne s'édite pas ici : il se modifie dans le Calendrier d'Apple, et redescend ensuite.
+        if (t.IsExternal) { Undo.Note(L.T("cal.external.readOnly")); return; }
+        OpenEditor(t, isNew: false);
+    }
+
+    // ===================== Faire glisser une tâche =====================
+
+    private Point _dragFrom;
+    private bool _dragging;
+
+    private void Row_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_dragging || e.LeftButton != MouseButtonState.Pressed) return;
+        if (sender is not FrameworkElement { Tag: PlanTask t } || t.IsExternal) return;
+        if (!TaskDrag.Far(_dragFrom, e.GetPosition(this))) return;
+
+        _dragging = true;
+        Click.Up(sender); // le glissement annule le clic : relâcher ne doit pas ouvrir l'éditeur
+        try { DragDrop.DoDragDrop((DependencyObject)sender, new DataObject(TaskDrag.Format, t), DragDropEffects.Move); }
+        finally { _dragging = false; }
+    }
+
+    /// <summary>Survol d'une ligne pendant un glissement : un trait montre où la tâche va se poser.</summary>
+    private void Row_DragOver(object sender, DragEventArgs e)
+    {
+        var moved = TaskDrag.From(e.Data);
+        if (moved is null || sender is not Border { Tag: PlanTask target } row || ReferenceEquals(moved, target) || target.IsExternal)
+        {
+            e.Effects = DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+        bool after = e.GetPosition(row).Y > row.ActualHeight / 2;
+        row.BorderThickness = new Thickness(0, after ? 0 : 2, 0, after ? 2 : 0);
+        row.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
+        e.Effects = DragDropEffects.Move;
+        e.Handled = true;
+    }
+
+    private void Row_DragLeave(object sender, DragEventArgs e)
+    {
+        if (sender is Border row) { row.ClearValue(Border.BorderThicknessProperty); row.ClearValue(Border.BorderBrushProperty); }
+    }
+
+    private void Row_Drop(object sender, DragEventArgs e)
+    {
+        Row_DragLeave(sender, e);
+        if (TaskDrag.From(e.Data) is not { } moved || sender is not Border { Tag: PlanTask target } row || target.IsExternal) return;
+        e.Handled = true;
+        if (moved.Date != target.Date || moved.Floating)
+        {
+            // Venue d'un autre jour ou de « à reprendre » : elle prend le créneau juste après celle qu'on a visée.
+            TaskDrag.MoveToSlot(moved, target.Date, e.GetPosition(row).Y > row.ActualHeight / 2 ? target.End : target.Start);
+        }
+        else TaskDrag.Reorder(target.Date, moved, target, after: e.GetPosition(row).Y > row.ActualHeight / 2);
+        Refresh();
     }
 
     /// <summary>
@@ -175,14 +287,116 @@ public partial class PlanningView : UserControl, IRefreshable
         EdFloating.IsChecked = t.Floating;
         EdDelete.Visibility = isNew ? Visibility.Collapsed : Visibility.Visible;
         EdError.Visibility = Visibility.Collapsed;
+        EdPinned.IsChecked = t.Pinned;
         BuildCategoryChips(EdCategories, "ed", t.CategoryId);
+        BuildEmojiChips(t.Emoji);
+        BuildReminderChips(t);
+        _editSteps = [.. t.Steps.Select(s => new SubTask { Id = s.Id, Title = s.Title, Done = s.Done })];
+        EdSteps.ItemsSource = _editSteps;
+        StepBox.Text = "";
         _editLinks = t.Links.Select(l => new TaskLink { Title = l.Title, Target = l.Target }).ToList();
         EdAutoOpen.IsChecked = t.AutoOpen;
         LinkBox.Text = "";
         BuildRhythmChips(t.Rhythm);
         BuildLinkChips();
         Editor.Visibility = Visibility.Visible;
+        ApplyView();
         EdTitle.Focus();
+    }
+
+    // ===================== Pictogramme, importance, rappels, étapes =====================
+
+    /// <summary>Une poignée de pictogrammes qui couvrent l'essentiel d'une journée. La liste courte est un choix : trop d'icônes, et choisir devient la tâche.</summary>
+    private static readonly string[] Emojis = ["💼", "📚", "🏃", "🧹", "🍳", "💻", "🎨", "📞", "💊", "🛒", "💬", "🌱"];
+
+    private void BuildEmojiChips(string? selected)
+    {
+        EdEmojis.Children.Clear();
+        Add(L.T("plan.ed.emoji.none"), null);
+        foreach (var e in Emojis) Add(e, e);
+
+        void Add(string text, string? value)
+        {
+            var rb = new RadioButton
+            {
+                Content = new TextBlock { Text = text, FontFamily = new FontFamily("Segoe UI Emoji"), FontSize = value is null ? 12 : 15 },
+                Tag = value, GroupName = "edEmoji", IsChecked = value == selected,
+                Margin = new Thickness(0, 0, 5, 5), Padding = new Thickness(0)
+            };
+            rb.SetResourceReference(StyleProperty, "Chip");
+            EdEmojis.Children.Add(rb);
+        }
+    }
+
+    private void BuildReminderChips(PlanTask t)
+    {
+        EdReminders.Children.Clear();
+        // Une tâche sans choix propre hérite des rappels par défaut : cochés, mais pas encore les siens.
+        var active = Reminders.For(t).ToHashSet();
+        foreach (var m in Services.Reminders.Choices)
+        {
+            var cb = new CheckBox
+            {
+                Content = ReminderLabel(m), Tag = m, IsChecked = active.Contains(m), Padding = new Thickness(0)
+            };
+            cb.SetResourceReference(StyleProperty, "ChipCheck");
+            EdReminders.Children.Add(cb);
+        }
+    }
+
+    public static string ReminderLabel(int minutes) =>
+        minutes == 0 ? L.T("remind.onTime") : L.F("remind.before", PlanTask.FormatDuration(TimeSpan.FromMinutes(minutes)));
+
+    private List<SubTask> _editSteps = [];
+
+    private void RefreshSteps()
+    {
+        EdSteps.ItemsSource = null;
+        EdSteps.ItemsSource = _editSteps;
+    }
+
+    private void StepAdd_Click(object sender, RoutedEventArgs e) => AddStep(StepBox.Text);
+
+    private void AddStep(string title)
+    {
+        title = title.Trim();
+        if (title.Length == 0) return;
+        _editSteps.Add(new SubTask { Title = title });
+        StepBox.Text = "";
+        RefreshSteps();
+        StepBox.Focus();
+    }
+
+    private void StepBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
+        e.Handled = true; // Entrée ajoute l'étape, elle n'enregistre pas la tâche
+        AddStep(StepBox.Text);
+    }
+
+    private void EdStepBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) { e.Handled = true; StepBox.Focus(); }
+    }
+
+    private void EdStep_Click(object sender, RoutedEventArgs e) { /* l'état est déjà lié, rien à faire avant l'enregistrement */ }
+
+    private void StepDelete_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: SubTask s }) { _editSteps.Remove(s); RefreshSteps(); }
+    }
+
+    /// <summary>Découpe les notes en étapes : une ligne = une étape. Le plus souvent, le découpage est déjà écrit là.</summary>
+    private void StepsFromNotes_Click(object sender, RoutedEventArgs e)
+    {
+        var lines = EdNotes.Text.Replace("\r", "").Split('\n')
+            .Select(l => l.TrimStart(' ', '\t', '-', '*', '•', '·', '>').Trim())
+            .Where(l => l.Length > 0)
+            .ToList();
+        if (lines.Count == 0) return;
+        foreach (var line in lines.Where(l => !_editSteps.Any(s => s.Title == l)))
+            _editSteps.Add(new SubTask { Title = line });
+        RefreshSteps();
     }
 
     // ===================== Liens de la tâche =====================
@@ -283,6 +497,11 @@ public partial class PlanningView : UserControl, IRefreshable
         _editing.IsBreak = EdBreak.IsChecked == true;
         _editing.Floating = EdFloating.IsChecked == true;
         _editing.CategoryId = SelectedCategory(EdCategories);
+        _editing.Pinned = EdPinned.IsChecked == true;
+        _editing.Emoji = EdEmojis.Children.OfType<RadioButton>().FirstOrDefault(r => r.IsChecked == true)?.Tag as string;
+        _editing.Reminders = [.. EdReminders.Children.OfType<CheckBox>().Where(c => c.IsChecked == true).Select(c => (int)c.Tag!).OrderByDescending(m => m)];
+        if (StepBox.Text.Trim().Length > 0) AddStep(StepBox.Text); // étape tapée mais pas encore « ajoutée »
+        _editing.Steps = [.. _editSteps.Where(s => !string.IsNullOrWhiteSpace(s.Title))];
         if (LinkBox.Text.Trim().Length > 0) AddLink(LinkBox.Text); // lien collé mais pas encore « ajouté »
         _editing.Links = _editLinks;
         _editing.AutoOpen = EdAutoOpen.IsChecked == true && _editLinks.Count > 0;
@@ -332,9 +551,9 @@ public partial class PlanningView : UserControl, IRefreshable
         Editor.Visibility = Visibility.Collapsed;
         PastePanel.Visibility = Visibility.Collapsed;
         DuplicatePanel.Visibility = Visibility.Collapsed;
-        ListScroll.Visibility = Visibility.Visible;
         _duplicateMode = false;
         _editing = null;
+        ApplyView();
     }
 
     // ===================== Coller un programme =====================
@@ -343,7 +562,7 @@ public partial class PlanningView : UserControl, IRefreshable
     {
         CloseEditors();
         PastePanel.Visibility = Visibility.Visible;
-        ListScroll.Visibility = Visibility.Collapsed;
+        ApplyView();
         BuildCategoryChips(PasteCategories, "paste", null);
         if (string.IsNullOrWhiteSpace(PasteBox.Text) && Clipboard.ContainsText())
         {
@@ -373,7 +592,7 @@ public partial class PlanningView : UserControl, IRefreshable
         var tasks = UpdatePreview();
         if (tasks.Count == 0) return;
         var cat = SelectedCategory(PasteCategories);
-        if (replace) Storage.Data.Tasks.RemoveAll(t => t.Date == _selected);
+        if (replace) Storage.Data.Tasks.RemoveAll(t => t.Date == _selected && !t.IsExternal);
         foreach (var t in tasks)
         {
             t.CategoryId = t.IsBreak ? null : cat;
@@ -411,7 +630,7 @@ public partial class PlanningView : UserControl, IRefreshable
 
     private void DuplicateTo(DateOnly[] dates)
     {
-        var source = Storage.TasksFor(_selected).Where(t => !t.Floating).ToList();
+        var source = Storage.TasksFor(_selected).Where(t => !t.Floating && !t.IsExternal).ToList();
         foreach (var d in dates.Where(d => d != _selected))
             Storage.Data.Tasks.AddRange(source.Select(t => t.Clone(d)));
         Storage.Save();
@@ -424,7 +643,7 @@ public partial class PlanningView : UserControl, IRefreshable
         if (sender is Button b && Storage.TasksFor(_selected).Any())
             ConfirmTwice(b, () =>
             {
-                Storage.Data.Tasks.RemoveAll(t => t.Date == _selected);
+                Storage.Data.Tasks.RemoveAll(t => t.Date == _selected && !t.IsExternal);
                 Storage.Save();
                 CloseEditors();
                 Refresh();
@@ -439,8 +658,10 @@ public partial class PlanningView : UserControl, IRefreshable
         if (dlg.ShowDialog() != true) return;
         // Exporte à partir d'aujourd'hui (les jours passés n'ont pas d'intérêt dans un agenda).
         var from = DateOnly.FromDateTime(DateTime.Now);
-        IcsService.Export(dlg.FileName, Storage.Data.Tasks.Where(t => t.Date >= from));
+        IcsService.Export(dlg.FileName, Storage.Data.Tasks.Where(t => t.Date >= from && !t.IsExternal));
     }
+
+    private void CalendarSettings_Click(object sender, RoutedEventArgs e) => App.Current.MainWin?.Navigate("settings");
 
     private void Import_Click(object sender, RoutedEventArgs e)
     {
