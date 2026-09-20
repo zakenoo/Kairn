@@ -10,7 +10,7 @@
     <RootNamespace>Kairn</RootNamespace>
     <AssemblyName>Kairn</AssemblyName>
     <ApplicationIcon>Assets\kairn.ico</ApplicationIcon>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Product>Kairn</Product>
     <SatelliteResourceLanguages>fr</SatelliteResourceLanguages>
     <InvariantGlobalization>false</InvariantGlobalization>

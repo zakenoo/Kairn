@@ -10,7 +10,11 @@ $csproj = Join-Path $root "Kairn\Kairn.csproj"
 
 if ($Version) {
     if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw "Version attendue au format 1.2.3" }
-    (Get-Content $csproj -Raw) -replace '<Version>[^<]*</Version>', "<Version>$Version</Version>" | Set-Content $csproj -Encoding utf8 -NoNewline
+    # Lecture et écriture en UTF-8 sans BOM, explicitement : sinon PowerShell 5.1 relit le fichier
+    # comme de l'ANSI et réécrit les accents en double encodage (« précompilé » → « prÃ©compilÃ© »).
+    $utf8 = New-Object System.Text.UTF8Encoding $false
+    $text = [System.IO.File]::ReadAllText($csproj, $utf8) -replace '<Version>[^<]*</Version>', "<Version>$Version</Version>"
+    [System.IO.File]::WriteAllText($csproj, $text, $utf8)
 }
 $Version = ([xml](Get-Content $csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
 
