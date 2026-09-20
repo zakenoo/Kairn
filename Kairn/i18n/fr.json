@@ -707,4 +707,9 @@
   "cal.external.tip": "Rendez-vous venu de ton calendrier iCloud. Il se modifie dans l'app Calendrier.",
   "cal.external.readOnly": "Ce rendez-vous vient d'iCloud : modifie-le dans l'app Calendrier, il redescendra ici.",
   "plan.ics.live": "Ou relier iCloud en continu →"
+  ,
+  "set.cal.log": "Voir le journal de synchronisation",
+  "set.cal.log.empty": "Le journal est vide : lance une synchronisation d'abord."
+  ,
+  "set.cal.idle": "Ton compte est relié, mais rien ne circule encore : coche au moins un calendrier ci-dessous pour voir tes rendez-vous, et active l'envoi si tu veux retrouver tes tâches sur ton iPhone."
 }

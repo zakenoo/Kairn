@@ -103,6 +103,13 @@
                             </StackPanel>
                         </DockPanel>
 
+                        <!-- Compte relié mais rien de coché ni d'envoyé : on ne laisse pas croire que ça synchronise -->
+                        <Border x:Name="CalIdle" Visibility="Collapsed" Margin="0,14,0,0" Padding="12,10"
+                                CornerRadius="{DynamicResource RadiusSmall}" Background="{DynamicResource AccentSoftBrush}"
+                                BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1">
+                            <TextBlock Text="{l:T set.cal.idle}" FontSize="12.5" TextWrapping="Wrap"/>
+                        </Border>
+
                         <TextBlock Text="{l:T set.cal.show}" Style="{StaticResource Label}" Margin="0,16,0,4"/>
                         <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,0,0,6" TextWrapping="Wrap"
                                    Text="{l:T set.cal.show.sub}"/>
@@ -116,6 +123,8 @@
                     </StackPanel>
 
                     <TextBlock x:Name="CalStatus" FontSize="12.5" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+                    <Button x:Name="CalLogBtn" Style="{StaticResource Ghost}" HorizontalAlignment="Left" Padding="0,6" Margin="0,6,0,0"
+                            FontSize="12" Content="{l:T set.cal.log}" Click="CalLog_Click" Visibility="Collapsed"/>
                 </StackPanel>
             </Border>
 

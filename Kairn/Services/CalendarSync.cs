@@ -59,23 +59,36 @@ public static class CalendarSync
         _running = new CancellationTokenSource();
         var ct = _running.Token;
         Busy = true;
+        Status = "";
         Changed?.Invoke();
-        try
-        {
-            await PullAsync(a, ct);
-            if (a.Push && a.WriteHref is { Length: > 0 }) await PushAsync(a, ct);
-            a.LastSync = DateTime.Now;
-            Storage.SaveSettings();
-            Status = "";
-        }
+
+        // Les deux sens sont indépendants : si la lecture échoue, l'envoi doit quand même partir.
+        // Les mélanger revenait à casser les deux dès que l'un des deux avait un problème.
+        var problems = new List<string>();
+        CalDavLog.Line($"--- sync: read={a.Read.Count} calendar(s), push={(a.Push ? "on" : "off")}");
+
+        try { await PullAsync(a, ct); }
         catch (OperationCanceledException) { }
-        catch (CalDavException e) { Status = L.T(e.Key); }
-        catch { Status = L.T("cal.err.network"); }
-        finally
+        catch (Exception e) { problems.Add(Describe(e, "pull")); }
+
+        if (a.Push && a.WriteHref is { Length: > 0 })
         {
-            Busy = false;
-            Changed?.Invoke();
+            try { await PushAsync(a, ct); }
+            catch (OperationCanceledException) { }
+            catch (Exception e) { problems.Add(Describe(e, "push")); }
         }
+
+        a.LastSync = DateTime.Now;
+        Storage.SaveSettings();
+        Status = problems.Count == 0 ? "" : string.Join(" ", problems.Distinct());
+        Busy = false;
+        Changed?.Invoke();
+    }
+
+    private static string Describe(Exception e, string step)
+    {
+        CalDavLog.Line($"{step} FAILED: {e.GetType().Name}: {e.Message}");
+        return e is CalDavException c ? L.T(c.Key) : L.T("cal.err.network");
     }
 
     // ===================== iCloud → Kairn =====================
@@ -90,6 +103,14 @@ public static class CalendarSync
         var from = today.AddDays(-DaysBefore);
         var to = today.AddDays(DaysAfter);
 
+        // Aucun calendrier coché : il n'y a rien à descendre, et ce n'est pas une panne.
+        // On le dit quand même, parce que « rien ne s'affiche » sans explication ressemble à un bug.
+        if (a.Read.Count == 0)
+        {
+            CalDavLog.Line("pull : aucun calendrier coché dans les réglages, rien à importer");
+            return;
+        }
+
         var names = (await CalDav.ListAsync(a, ct)).ToDictionary(c => c.Href, c => c.Name);
         var fetched = new List<PlanTask>();
         foreach (var href in a.Read.ToList())
@@ -97,7 +118,9 @@ public static class CalendarSync
             ct.ThrowIfCancellationRequested();
             // Le calendrier « Kairn » ne redescend pas : ce sont nos propres tâches, on les a déjà.
             if (href == a.WriteHref) continue;
-            foreach (var t in await CalDav.FetchAsync(a, href, from, to, ct))
+            var events = await CalDav.FetchAsync(a, href, from, to, ct);
+            CalDavLog.Line($"pull : {events.Count} rendez-vous depuis « {names.GetValueOrDefault(href) ?? href} »");
+            foreach (var t in events)
             {
                 t.ExternalId = t.Id;
                 t.ExternalCalendar = names.GetValueOrDefault(href);
@@ -128,6 +151,7 @@ public static class CalendarSync
             .ToList();
 
         var wanted = mine.ToDictionary(CalDav.OwnUid);
+        CalDavLog.Line($"push : {wanted.Count} tâche(s) à déposer, {a.Pushed.Count} déjà là-bas");
         foreach (var (uid, task) in wanted)
         {
             ct.ThrowIfCancellationRequested();

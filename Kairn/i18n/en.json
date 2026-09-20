@@ -707,4 +707,9 @@
   "cal.external.tip": "Appointment from your iCloud calendar. Change it in the Calendar app.",
   "cal.external.readOnly": "This appointment comes from iCloud: change it in the Calendar app and it'll come back down here.",
   "plan.ics.live": "Or link iCloud continuously →"
+  ,
+  "set.cal.log": "Open the sync log",
+  "set.cal.log.empty": "The log is empty: run a sync first."
+  ,
+  "set.cal.idle": "Your account is linked, but nothing is syncing yet: tick at least one calendar below to see your appointments, and turn on sending if you want your tasks on your iPhone."
 }

@@ -707,4 +707,9 @@
   "cal.external.tip": "Compromisso vindo do teu calendário iCloud. Altera-se na app Calendário.",
   "cal.external.readOnly": "Este compromisso vem do iCloud: altera-o na app Calendário e voltará a descer aqui.",
   "plan.ics.live": "Ou ligar o iCloud em contínuo →"
+  ,
+  "set.cal.log": "Ver o registo de sincronização",
+  "set.cal.log.empty": "O registo está vazio: faz primeiro uma sincronização."
+  ,
+  "set.cal.idle": "A tua conta está ligada, mas ainda não circula nada: marca pelo menos um calendário abaixo para veres os teus compromissos, e liga o envio se quiseres as tarefas no iPhone."
 }

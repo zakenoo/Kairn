@@ -707,4 +707,9 @@
   "cal.external.tip": "来自你 iCloud 日历的日程。要改请到「日历」App 里改。",
   "cal.external.readOnly": "这个日程来自 iCloud：到「日历」App 里修改，改完会同步回这里。",
   "plan.ics.live": "或者持续连接 iCloud →"
+  ,
+  "set.cal.log": "查看同步日志",
+  "set.cal.log.empty": "日志是空的：先同步一次。"
+  ,
+  "set.cal.idle": "账户已连接，但还没有任何内容在同步：在下面至少勾选一个日历才能看到你的日程；想在 iPhone 上看到任务，请打开发送开关。"
 }

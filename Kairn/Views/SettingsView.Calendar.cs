@@ -23,12 +23,34 @@ public partial class SettingsView
         ShowCalStatus(CalendarSync.Status, error: true);
         if (!linked || S.Calendar is not { } a) return;
 
+        // Au redémarrage, la liste des calendriers n'est plus en mémoire : on la redemande,
+        // sinon la page affiche « aucun calendrier » alors que le compte est bien relié.
+        if (_calendars.Count == 0) _ = ReloadCalendarsAsync();
+
         CalAccount.Text = a.User;
         CalLastSync.Text = CalendarSync.Busy ? L.T("set.cal.syncing")
             : a.LastSync == default ? L.T("set.cal.never")
             : L.F("set.cal.lastSync", a.LastSync.ToString("HH:mm", L.Culture));
         CalPushSwitch.IsChecked = a.Push;
+        CalLogBtn.Visibility = Visibility.Visible;
         BuildCalendarChips();
+
+        // Relier un compte ne suffit pas : sans calendrier coché et sans l'envoi, rien ne circule.
+        // Le dire clairement, sinon on croit que la synchro marche alors qu'elle ne fait rien.
+        bool idle = a.Read.Count == 0 && !a.Push;
+        CalIdle.Visibility = idle ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async Task ReloadCalendarsAsync()
+    {
+        if (S.Calendar is not { } a) return;
+        try
+        {
+            _calendars = await CalDav.ListAsync(a, CancellationToken.None);
+            BuildCalendarChips();
+        }
+        catch (CalDavException ex) { ShowCalStatus(L.T(ex.Key), error: true); }
+        catch { ShowCalStatus(L.T("cal.err.network"), error: true); }
     }
 
     private void BuildCalendarChips()
@@ -95,10 +117,17 @@ public partial class SettingsView
 
     private async void CalRefresh_Click(object sender, RoutedEventArgs e)
     {
-        if (S.Calendar is not { } a) return;
-        try { _calendars = await CalDav.ListAsync(a, CancellationToken.None); } catch { }
+        if (S.Calendar is null) return;
+        await ReloadCalendarsAsync();
         await CalendarSync.SyncAsync();
         BuildCalendar();
+    }
+
+    /// <summary>Ouvre le journal de synchronisation : de quoi voir ce qu'Apple a réellement répondu.</summary>
+    private void CalLog_Click(object sender, RoutedEventArgs e)
+    {
+        if (System.IO.File.Exists(CalDavLog.Path)) Launcher.Open(CalDavLog.Path);
+        else ShowCalStatus(L.T("set.cal.log.empty"), error: false);
     }
 
     private void CalUnlink_Click(object sender, RoutedEventArgs e)

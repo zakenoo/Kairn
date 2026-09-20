@@ -707,4 +707,9 @@
   "cal.external.tip": "Cita de tu calendario de iCloud. Se modifica en la app Calendario.",
   "cal.external.readOnly": "Esta cita viene de iCloud: cámbiala en la app Calendario y volverá a bajar aquí.",
   "plan.ics.live": "O vincular iCloud en continuo →"
+  ,
+  "set.cal.log": "Ver el registro de sincronización",
+  "set.cal.log.empty": "El registro está vacío: lanza una sincronización primero."
+  ,
+  "set.cal.idle": "Tu cuenta está vinculada, pero aún no circula nada: marca al menos un calendario abajo para ver tus citas, y activa el envío si quieres tus tareas en el iPhone."
 }

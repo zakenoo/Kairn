@@ -327,6 +327,13 @@ public enum FocusMode
 
 public class AppSettings
 {
+    /// <summary>
+    /// Réglages écrits par une version plus récente que celle qui lit ce fichier.
+    /// On les garde tels quels et on les réécrit : lancer une vieille copie de Kairn
+    /// ne doit pas effacer silencieusement ce qu'une version plus récente avait enregistré.
+    /// </summary>
+    [JsonExtensionData] public Dictionary<string, System.Text.Json.JsonElement>? Unknown { get; set; }
+
     /// <summary>Thème actif (copie modifiable d'un thème préfait ou perso).</summary>
     public ThemeDef Theme { get; set; } = Services.ThemePresets.Default();
     /// <summary>Thèmes enregistrés par l'utilisateur.</summary>
@@ -386,6 +393,9 @@ public class CustomApp
 
 public class AppData
 {
+    /// <summary>Même protection que pour les réglages : une vieille version ne doit rien jeter.</summary>
+    [JsonExtensionData] public Dictionary<string, System.Text.Json.JsonElement>? Unknown { get; set; }
+
     public List<PlanTask> Tasks { get; set; } = [];
     public List<Category> Categories { get; set; } = [];
     public List<Goal> Goals { get; set; } = [];

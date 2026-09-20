@@ -51,14 +51,28 @@ public static class CalDav
         if (body != null) req.Content = new StringContent(body, Encoding.UTF8, "application/xml");
         using var res = await http.SendAsync(req, ct);
 
+        var text = await res.Content.ReadAsStringAsync(ct);
+        CalDavLog.Line($"{method.Method} {url} -> {(int)res.StatusCode} {res.ReasonPhrase} ({text.Length} o)");
+
         if (res.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) throw new CalDavException("cal.err.auth");
         if (!res.IsSuccessStatusCode && res.StatusCode != HttpStatusCode.MultiStatus)
+        {
+            // Le corps d'erreur dit souvent précisément ce qui cloche côté Apple.
+            CalDavLog.Line("  corps : " + Snippet(text));
             throw new CalDavException("cal.err.server", $"{(int)res.StatusCode} {res.ReasonPhrase}");
+        }
 
-        var text = await res.Content.ReadAsStringAsync(ct);
         try { return XDocument.Parse(text); }
-        catch { throw new CalDavException("cal.err.server", "réponse illisible"); }
+        catch
+        {
+            CalDavLog.Line("  réponse illisible : " + Snippet(text));
+            throw new CalDavException("cal.err.server", "réponse illisible");
+        }
     }
+
+    /// <summary>Début d'une réponse, pour le journal : assez pour diagnostiquer, pas assez pour tout recopier.</summary>
+    private static string Snippet(string text) =>
+        text.Length <= 400 ? text.ReplaceLineEndings(" ") : text[..400].ReplaceLineEndings(" ") + "…";
 
     /// <summary>Transforme un chemin renvoyé par le serveur (« /123/calendars/ ») en adresse complète.</summary>
     private static string Absolute(string baseUrl, string href) =>
@@ -124,6 +138,9 @@ public static class CalDav
             if (string.IsNullOrWhiteSpace(name)) name = href.Trim('/').Split('/').LastOrDefault() ?? href;
             list.Add(new RemoteCalendar(Absolute(home, href), name, props.Descendants(A + "calendar-color").FirstOrDefault()?.Value));
         }
+        // Savoir quels calendriers existent vraiment évite de chercher un rendez-vous
+        // dans celui qui n'est pas coché.
+        CalDavLog.Line("calendriers trouvés : " + string.Join(", ", list.Select(c => $"« {c.Name} »")));
         return list;
     }
 
@@ -137,11 +154,12 @@ public static class CalDav
     {
         using var http = Client(a);
         string Utc(DateOnly d) => d.ToDateTime(TimeOnly.MinValue).ToUniversalTime().ToString("yyyyMMdd'T'HHmmss'Z'");
-        var body = $"""
+
+        string Query(bool expand) => $"""
             <c:calendar-query xmlns:d="DAV:" xmlns:c="{C}">
               <d:prop>
                 <d:getetag/>
-                <c:calendar-data><c:expand start="{Utc(from)}" end="{Utc(to)}"/></c:calendar-data>
+                <c:calendar-data>{(expand ? $"<c:expand start=\"{Utc(from)}\" end=\"{Utc(to)}\"/>" : "")}</c:calendar-data>
               </d:prop>
               <c:filter>
                 <c:comp-filter name="VCALENDAR">
@@ -152,15 +170,40 @@ public static class CalDav
               </c:filter>
             </c:calendar-query>
             """;
-        var doc = await SendAsync(http, Report, calendarHref, body, 1, ct);
 
+        var tasks = await RunQueryAsync(http, calendarHref, Query(expand: true), ct);
+        if (tasks.Count > 0) return Within(tasks, from, to);
+
+        // Certains serveurs renvoient une réponse vide quand on leur demande de développer les
+        // répétitions. On repose alors la même question sans « expand » : les événements simples
+        // reviennent, et une répétition revient au moins une fois au lieu de disparaître.
+        CalDavLog.Line("  aucun résultat avec expand, nouvelle tentative sans");
+        tasks = await RunQueryAsync(http, calendarHref, Query(expand: false), ct);
+        return Within(tasks, from, to);
+    }
+
+    private static async Task<List<PlanTask>> RunQueryAsync(HttpClient http, string calendarHref, string body, CancellationToken ct)
+    {
+        var doc = await SendAsync(http, Report, calendarHref, body, 1, ct);
         var tasks = new List<PlanTask>();
         foreach (var data in doc.Descendants(C + "calendar-data"))
         {
             if (string.IsNullOrWhiteSpace(data.Value)) continue;
             tasks.AddRange(IcsService.ParseText(data.Value));
         }
+        if (tasks.Count == 0) CalDavLog.Line("  réponse : " + Snippet(doc.ToString()));
         return tasks;
+    }
+
+    /// <summary>
+    /// Ne garde que ce qui tombe vraiment dans la fenêtre. Sans « expand », le serveur peut renvoyer
+    /// l'événement d'origine d'une répétition, daté d'il y a des années : le placer tel quel serait faux.
+    /// </summary>
+    private static List<PlanTask> Within(List<PlanTask> tasks, DateOnly from, DateOnly to)
+    {
+        var kept = tasks.Where(t => t.Date >= from && t.Date <= to).ToList();
+        if (kept.Count != tasks.Count) CalDavLog.Line($"  {tasks.Count - kept.Count} événement(s) hors fenêtre, ignorés");
+        return kept;
     }
 
     // ===================== Écriture =====================
@@ -209,7 +252,12 @@ public static class CalDav
         };
         req.Content.Headers.ContentType = new MediaTypeHeaderValue("text/calendar") { CharSet = "utf-8" };
         using var res = await http.SendAsync(req, ct);
-        if (!res.IsSuccessStatusCode) throw new CalDavException("cal.err.write", $"{(int)res.StatusCode} {res.ReasonPhrase}");
+        CalDavLog.Line($"PUT {uid} -> {(int)res.StatusCode} {res.ReasonPhrase}");
+        if (!res.IsSuccessStatusCode)
+        {
+            CalDavLog.Line("  corps : " + Snippet(await res.Content.ReadAsStringAsync(ct)));
+            throw new CalDavException("cal.err.write", $"{(int)res.StatusCode} {res.ReasonPhrase}");
+        }
     }
 
     /// <summary>Retire une séance que Kairn avait déposée (et elle seule).</summary>

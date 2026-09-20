@@ -707,4 +707,9 @@
   "cal.external.tip": "Termin aus deinem iCloud-Kalender. Ändern kannst du ihn in der Kalender-App.",
   "cal.external.readOnly": "Dieser Termin kommt aus iCloud: ändere ihn in der Kalender-App, dann kommt er hier wieder an.",
   "plan.ics.live": "Oder iCloud dauerhaft verbinden →"
+  ,
+  "set.cal.log": "Sync-Protokoll öffnen",
+  "set.cal.log.empty": "Das Protokoll ist leer: synchronisiere zuerst einmal."
+  ,
+  "set.cal.idle": "Dein Konto ist verbunden, aber es wird noch nichts übertragen: Kreuze unten mindestens einen Kalender an, um deine Termine zu sehen, und schalte das Senden ein, wenn du deine Aufgaben auf dem iPhone willst."
 }

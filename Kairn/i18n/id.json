@@ -707,4 +707,9 @@
   "cal.external.tip": "Janji temu dari kalender iCloud-mu. Ubahnya lewat aplikasi Kalender.",
   "cal.external.readOnly": "Janji temu ini datang dari iCloud: ubah di aplikasi Kalender, nanti turun lagi ke sini.",
   "plan.ics.live": "Atau hubungkan iCloud terus-menerus →"
+  ,
+  "set.cal.log": "Lihat log sinkronisasi",
+  "set.cal.log.empty": "Log-nya kosong: jalankan sinkronisasi dulu."
+  ,
+  "set.cal.idle": "Akunmu sudah terhubung, tapi belum ada yang disinkronkan: centang minimal satu kalender di bawah untuk melihat janji temumu, dan nyalakan pengiriman kalau mau tugasmu ada di iPhone."
 }
