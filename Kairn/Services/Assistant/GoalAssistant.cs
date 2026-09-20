@@ -26,7 +26,8 @@ public static class GoalAssistant
 
     public static bool LocalReady => S.LocalSource switch
     {
-        "ollama" or "lmstudio" => true, // vérifié au moment de l'appel
+        // Un modèle n'est retenu qu'une fois le serveur détecté dans Réglages (qui revérifie à chaque ouverture).
+        "ollama" or "lmstudio" => !string.IsNullOrEmpty(S.LocalModel),
         _ => LocalEngine.IsInstalled,
     };
 
