@@ -9,6 +9,9 @@ namespace Kairn.Views;
 public partial class MainWindow : Window
 {
     private readonly Dictionary<string, UserControl> _views = new();
+    /// <summary>Pour chaque page : l'état des données et l'heure de sa dernière mise à jour.</summary>
+    private readonly Dictionary<UserControl, (long Version, DateTime At)> _seen = new();
+    private string _current = "today";
 
     public MainWindow()
     {
@@ -26,12 +29,14 @@ public partial class MainWindow : Window
             // Une fenêtre sans bordure native déborde de ~7 px une fois agrandie.
             Root.Margin = WindowState == WindowState.Maximized ? new Thickness(7) : new Thickness(0);
             MaxBtn.Content = WindowState == WindowState.Maximized ? "" : "";
+            if (WindowState != WindowState.Minimized) RefreshCurrent();
         };
+        IsVisibleChanged += (_, _) => { if (IsVisible) RefreshCurrent(); };
         Activated += (_, _) =>
         {
-            (Host.Content as IRefreshable)?.Refresh();
-            // On revient sur Kairn : c'est le bon moment pour redemander à iCloud ce qui a changé.
-            if (CalendarSync.Linked) _ = CalendarSync.SyncAsync();
+            RefreshCurrent();
+            // On revient sur Kairn : bon moment pour redemander à iCloud ce qui a changé (au plus toutes les 3 minutes).
+            CalendarSync.SyncIfIdleFor(TimeSpan.FromMinutes(3));
         };
         Loc.Instance.Changed += OnLanguageChanged;
         FlowDirection = Loc.Instance.Current.Rtl ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
@@ -46,10 +51,25 @@ public partial class MainWindow : Window
     private void OnLanguageChanged()
     {
         FlowDirection = Loc.Instance.Current.Rtl ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
-        var current = _views.FirstOrDefault(kv => kv.Value == Host.Content).Key ?? "today";
         _views.Clear();
-        Navigate(current);
+        _seen.Clear();
+        Navigate(_current);
         RefreshGuard();
+    }
+
+    /// <summary>
+    /// Remet à jour la page affichée, seulement si les données ont changé depuis (ou si elle date de plus de 10 minutes,
+    /// pour les textes qui dépendent de l'heure). Fenêtre cachée ou réduite : rien, ce sera fait à son retour.
+    /// Avant, chaque retour sur la fenêtre reconstruisait toute la page.
+    /// </summary>
+    public void RefreshCurrent(bool force = false)
+    {
+        if (Host.Content is not UserControl view || view is not IRefreshable page) return;
+        if (!IsVisible || WindowState == WindowState.Minimized) return;
+        if (!force && _seen.TryGetValue(view, out var seen) && seen.Version == Storage.Version
+            && DateTime.Now - seen.At < TimeSpan.FromMinutes(10)) return;
+        page.Refresh();
+        _seen[view] = (Storage.Version, DateTime.Now);
     }
 
     private bool _syncingNav;
@@ -76,8 +96,10 @@ public partial class MainWindow : Window
             };
             _views[key] = view;
         }
-        if (view is PlanningView p && date is { } d) p.SelectDate(d);
-        (view as IRefreshable)?.Refresh();
+        _current = key;
+        if (view is PlanningView p && date is { } d) p.SelectDate(d); // qui remet déjà la page à jour
+        else (view as IRefreshable)?.Refresh();
+        _seen[view] = (Storage.Version, DateTime.Now);
         if (view is PlanningView pe && edit != null) pe.EditTask(edit, schedule: true);
         Host.Content = view;
         // Le menu de gauche suit toujours la page affichée (y compris quand on y arrive par un lien ou un bouton).
@@ -162,7 +184,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(CancelEventArgs e)
     {
-        Storage.Save();
+        Storage.Flush();
         if (Storage.Settings.CloseToTray)
         {
             e.Cancel = true;
@@ -180,9 +202,12 @@ public partial class MainWindow : Window
     /// <summary>Une fois la fenêtre cachée, on rend la mémoire inutilisée à Windows (l'app ne garde que le garde en arrière-plan).</summary>
     private static void TrimMemory()
     {
+        // Les grands blocs (images, gros fichiers lus) sont regroupés aussi, sinon leurs trous restent réservés.
+        System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
         GC.Collect();
         GC.WaitForPendingFinalizers();
-        SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, -1, -1);
+        using var self = System.Diagnostics.Process.GetCurrentProcess();
+        SetProcessWorkingSetSize(self.Handle, -1, -1);
     }
 }
 

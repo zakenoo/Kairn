@@ -1,10 +1,10 @@
 using System.Threading;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Threading;
 using Kairn.Services;
 using Kairn.Services.Assistant;
 using Kairn.Views;
-using Forms = System.Windows.Forms;
 
 namespace Kairn;
 
@@ -15,7 +15,7 @@ public partial class App : Application
         Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(Storage.Root.ToLowerInvariant())))[..12];
     private Mutex? _mutex;
     private EventWaitHandle? _showSignal;
-    private Forms.NotifyIcon? _tray;
+    private TrayIcon? _tray;
 
     public FocusGuard Guard { get; } = new();
     public static new App Current => (App)Application.Current;
@@ -66,8 +66,6 @@ public partial class App : Application
         int dev = Array.FindIndex(e.Args, a => a.StartsWith("--assistant-"));
         if (dev >= 0) { AssistantDevTools.Run(e.Args[dev..]); return; }
 
-        CreateTray();
-
         Guard.Nudge += (task, app) => NudgeWindow.Show(task, app, closed: false);
         Guard.Closed += (task, app) => NudgeWindow.Show(task, app, closed: true);
         Guard.RhythmChanged += NudgeWindow.ShowRhythm;
@@ -79,20 +77,31 @@ public partial class App : Application
         // Ctrl+Alt+K depuis n'importe où : noter une idée avant qu'elle s'échappe.
         HotKey.Apply(QuickAddWindow.Open);
 
-        // Calendrier iCloud, seulement s'il a été relié : les rendez-vous descendent, les séances remontent.
-        CalendarSync.Changed += () => Dispatcher.BeginInvoke(Refreshed);
-        CalendarSync.Start();
+        // Lancé à l'ouverture de session : le réseau attend une minute, le temps que Windows finisse de démarrer.
+        var networkDelay = e.Args.Contains(StartupService.StartupArg) ? TimeSpan.FromMinutes(1) : TimeSpan.Zero;
 
-        if (Storage.Settings.CheckUpdates) Updater.StartAutoCheck();
+        // Calendrier iCloud, seulement s'il a été relié : les rendez-vous descendent, les séances remontent.
+        // La page affichée n'est reconstruite que si la synchro a changé quelque chose (les Réglages, eux, montrent son état).
+        CalendarSync.Changed += () => Dispatcher.BeginInvoke(() => MainWin?.RefreshCurrent(force: MainWin.Host.Content is SettingsView));
+        CalendarSync.Start(networkDelay);
+
+        if (Storage.Settings.CheckUpdates) Updater.StartAutoCheck(networkDelay);
+
+        // Fin de session Windows : ce qui attend d'être enregistré l'est tout de suite.
+        SessionEnding += (_, _) => { Storage.Flush(); Storage.SaveSettings(); };
 
         MainWin = new MainWindow();
         MainWin.Show();
+
+        // L'icône de la zone de notification et le ménage des fichiers temporaires attendent que la fenêtre soit affichée.
+        Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, CreateTray);
+        Cleanup.Schedule();
 
         // « Kairn.exe --snapshot dossier [langue] » : enregistre une image de chaque page puis quitte
         // (captures pour la documentation, indépendantes de l'écran).
         int snap = Array.IndexOf(e.Args, "--snapshot");
         if (snap >= 0 && snap + 1 < e.Args.Length)
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle,
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle,
                 () => Snapshots(e.Args[snap + 1], snap + 2 < e.Args.Length ? e.Args[snap + 2] : null));
     }
 
@@ -148,26 +157,6 @@ public partial class App : Application
         Quit();
     }
 
-    private void BuildTrayMenu()
-    {
-        if (_tray?.ContextMenuStrip is not { } menu) return;
-        menu.Items.Clear();
-        menu.Items.Add(L.T("tray.open"), null, (_, _) => ShowMain());
-        menu.Items.Add(L.T("tray.quickAdd"), null, (_, _) => QuickAddWindow.Open());
-        menu.Items.Add(L.T("tray.snooze"), null, (_, _) => Guard.SnoozedUntil = DateTime.Now.AddMinutes(15));
-        menu.Items.Add("-");
-        menu.Items.Add(L.T("tray.quit"), null, (_, _) => Quit());
-        menu.RightToLeft = Loc.Instance.Current.Rtl ? Forms.RightToLeft.Yes : Forms.RightToLeft.No;
-    }
-
-    private void SetTrayIcon(byte[] ico)
-    {
-        if (_tray is null) return;
-        var old = _tray.Icon;
-        _tray.Icon = new System.Drawing.Icon(new System.IO.MemoryStream(ico), Forms.SystemInformation.SmallIconSize);
-        old?.Dispose();
-    }
-
     public void ShowMain()
     {
         if (MainWin is null) return;
@@ -176,38 +165,51 @@ public partial class App : Application
         MainWin.Activate();
     }
 
-    /// <summary>Les données ont changé ailleurs que dans la page affichée (capture rapide, rappel…) : elle se remet à jour.</summary>
-    public void Refreshed() => (MainWin?.Host.Content as Views.IRefreshable)?.Refresh();
+    /// <summary>
+    /// Les données ont changé ailleurs que dans la page affichée (capture rapide, rappel…) : elle se remet à jour,
+    /// ou le fera en réapparaissant si la fenêtre est cachée.
+    /// </summary>
+    public void Refreshed() => MainWin?.RefreshCurrent();
 
     private void CreateTray()
     {
-        var iconStream = GetResourceStream(new Uri("pack://application:,,,/Assets/kairn.ico"))?.Stream;
-        _tray = new Forms.NotifyIcon
-        {
-            Text = "Kairn",
-            Icon = iconStream != null ? new System.Drawing.Icon(iconStream) : System.Drawing.SystemIcons.Application,
-            Visible = true,
-            ContextMenuStrip = new Forms.ContextMenuStrip()
-        };
-        BuildTrayMenu();
-        Loc.Instance.Changed += BuildTrayMenu;
+        if (_tray != null) return;
         // Icône aux couleurs du thème (et mise à jour dès qu'on la change dans Apparence).
-        if (AppIcon.Ico is { } ico) SetTrayIcon(ico);
-        AppIcon.Changed += SetTrayIcon;
-        _tray.MouseClick += (_, a) => { if (a.Button == Forms.MouseButtons.Left) ShowMain(); };
+        _tray = new TrayIcon("Kairn", AppIcon.Ico ?? EmbeddedIcon()) { RightToLeft = Loc.Instance.Current.Rtl };
+        _tray.Menu = () =>
+        [
+            new(L.T("tray.open"), ShowMain),
+            new(L.T("tray.quickAdd"), QuickAddWindow.Open),
+            new(L.T("tray.snooze"), () => Guard.SnoozedUntil = DateTime.Now.AddMinutes(15)),
+            new("", null),
+            new(L.T("tray.quit"), Quit),
+        ];
+        _tray.Click += ShowMain;
+        Loc.Instance.Changed += () => { if (_tray != null) _tray.RightToLeft = Loc.Instance.Current.Rtl; };
+        AppIcon.Changed += ico => _tray?.SetIcon(ico);
+    }
+
+    private static byte[] EmbeddedIcon()
+    {
+        using var stream = GetResourceStream(new Uri("pack://application:,,,/Assets/kairn.ico")).Stream;
+        using var copy = new System.IO.MemoryStream();
+        stream.CopyTo(copy);
+        return copy.ToArray();
     }
 
     public void Quit()
     {
         Guard.Stop();
         HotKey.Unregister();
-        Storage.Save();
-        if (_tray != null) { _tray.Visible = false; _tray.Dispose(); }
+        Storage.Flush();
+        Storage.SaveSettings();
+        _tray?.Dispose();
         Shutdown();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        Storage.Flush(); // filet de sécurité : ce qui attendait encore d'être écrit (outils de développement…)
         _tray?.Dispose();
         Kairn.Services.Assistant.LocalEngine.Stop(); // le modèle local ne survit pas à Kairn
         _mutex?.Dispose();

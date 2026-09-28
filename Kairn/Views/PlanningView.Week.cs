@@ -159,7 +159,7 @@ public partial class PlanningView
         block.SetResourceReference(Border.BorderBrushProperty, task.Pinned ? "AccentBrush" : "LineBrush");
         if (task.IsExternal) block.ToolTip = $"{task.TimeRange} · {task.Title}\n{L.T("cal.external.tip")}";
         if (Storage.CategoryById(task.CategoryId) is { } cat)
-            block.BorderBrush = new SolidColorBrush(ThemeService.Parse(cat.Color, "#F2F2F2"));
+            block.BorderBrush = ThemeService.BrushFor(cat.Color);
 
         Canvas.SetTop(block, top);
         Canvas.SetLeft(block, 2);

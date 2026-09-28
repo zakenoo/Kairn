@@ -11,7 +11,7 @@ namespace Kairn.Services;
 ///     sur l'iPhone et le Mac.
 ///
 /// Apple ne prévient pas les applications tierces quand quelque chose change : on redemande
-/// toutes les dix minutes, au retour sur la fenêtre, et quand on clique sur « Rafraîchir ».
+/// toutes les dix minutes, au retour sur la fenêtre (au plus toutes les trois minutes), et quand on clique sur « Rafraîchir ».
 /// Rien ne part et rien n'arrive tant que la personne n'a pas relié son compte elle-même.
 /// </summary>
 public static class CalendarSync
@@ -28,24 +28,39 @@ public static class CalendarSync
     /// <summary>Dernier message d'état, déjà traduit. Vide si tout va bien.</summary>
     public static string Status { get; private set; } = "";
     public static bool Busy { get; private set; }
+    /// <summary>Début de la dernière synchro, réussie ou non.</summary>
+    public static DateTime LastAttempt { get; private set; }
 
     private static CalendarAccount? Account => Storage.Settings.Calendar;
     public static bool Linked => Account is { User.Length: > 0, HomeUrl.Length: > 0 };
 
-    public static void Start()
+    /// <summary>Synchro toutes les dix minutes. <paramref name="delay"/> : attente avant la première (ouverture de session).</summary>
+    public static void Start(TimeSpan delay)
     {
         Timer.Tick += (_, _) => _ = SyncAsync();
         Timer.Start();
-        if (Linked) _ = SyncAsync();
+        if (!Linked) return;
+        if (delay <= TimeSpan.Zero) { _ = SyncAsync(); return; }
+        var first = new DispatcherTimer { Interval = delay };
+        first.Tick += (_, _) => { first.Stop(); _ = SyncAsync(); };
+        first.Start();
     }
 
     public static void Stop() => Timer.Stop();
+
+    /// <summary>Synchro au retour sur la fenêtre, sauf si la précédente date de moins de <paramref name="minimum"/>.</summary>
+    public static void SyncIfIdleFor(TimeSpan minimum)
+    {
+        if (Linked && DateTime.Now - LastAttempt >= minimum) _ = SyncAsync();
+    }
 
     /// <summary>Coupe le lien : les rendez-vous importés disparaissent de Kairn, rien n'est touché côté Apple.</summary>
     public static void Unlink()
     {
         Storage.Settings.Calendar = null;
         Storage.SaveSettings();
+        CalDav.Forget();
+        _names = null;
         Storage.Data.Tasks.RemoveAll(t => t.IsExternal);
         Storage.Save();
         Status = "";
@@ -55,6 +70,10 @@ public static class CalendarSync
     public static async Task SyncAsync()
     {
         if (Busy || Account is not { } a || !Linked) return;
+        LastAttempt = DateTime.Now;
+        // Les dix minutes repartent d'ici : inutile de recommencer juste après une synchro faite au retour sur la fenêtre.
+        Timer.Stop();
+        Timer.Start();
         _running?.Cancel();
         _running = new CancellationTokenSource();
         var ct = _running.Token;
@@ -78,8 +97,8 @@ public static class CalendarSync
             catch (Exception e) { problems.Add(Describe(e, "push")); }
         }
 
+        // Gardé en mémoire pour les Réglages : le fichier n'est plus réécrit toutes les dix minutes pour cette seule heure.
         a.LastSync = DateTime.Now;
-        Storage.SaveSettings();
         Status = problems.Count == 0 ? "" : string.Join(" ", problems.Distinct());
         Busy = false;
         Changed?.Invoke();
@@ -111,7 +130,7 @@ public static class CalendarSync
             return;
         }
 
-        var names = (await CalDav.ListAsync(a, ct)).ToDictionary(c => c.Href, c => c.Name);
+        var names = await NamesAsync(a, ct);
         var fetched = new List<PlanTask>();
         foreach (var href in a.Read.ToList())
         {
@@ -128,10 +147,45 @@ public static class CalendarSync
             }
         }
 
+        // Rien n'a bougé chez Apple : ni les tâches ni le fichier ne sont touchés (avant, tout était réécrit toutes les dix minutes).
+        var current = Storage.Data.Tasks.Where(t => t.IsExternal && t.Date >= from && t.Date <= to).ToList();
+        if (current.Count == fetched.Count && current.Select(Key).ToHashSet().SetEquals(fetched.Select(Key)))
+        {
+            CalDavLog.Line("pull : rien de nouveau");
+            return;
+        }
+
         Storage.Data.Tasks.RemoveAll(t => t.IsExternal && t.Date >= from && t.Date <= to);
         // Un rendez-vous qui tomberait exactement sur une tâche de Kairn ne l'écrase pas : les deux coexistent.
         Storage.Data.Tasks.AddRange(fetched);
         Storage.Save();
+    }
+
+    /// <summary>Tout ce qui, s'il change, doit changer aussi dans Kairn.</summary>
+    private static string Key(PlanTask t) =>
+        string.Join('\u001f', t.ExternalId, t.ExternalCalendar, t.Date.DayNumber, t.Start.Ticks, t.End.Ticks, t.Title, t.Notes);
+
+    private static Dictionary<string, string>? _names;
+    private static DateTime _namesAt;
+
+    /// <summary>
+    /// Noms des calendriers (« Perso », « Travail »…), redemandés toutes les six heures ou s'il en manque un.
+    /// Avant, la liste complète était redemandée à chaque synchro.
+    /// </summary>
+    private static async Task<Dictionary<string, string>> NamesAsync(CalendarAccount a, CancellationToken ct)
+    {
+        if (_names is null || DateTime.Now - _namesAt > TimeSpan.FromHours(6) || a.Read.Any(h => !_names.ContainsKey(h)))
+            Remember(await CalDav.ListAsync(a, ct));
+        return _names!;
+    }
+
+    /// <summary>Retient les calendriers trouvés (les Réglages l'appellent aussi quand ils redemandent la liste).</summary>
+    public static void Remember(IEnumerable<RemoteCalendar> calendars)
+    {
+        var names = new Dictionary<string, string>();
+        foreach (var c in calendars) names[c.Href] = c.Name;
+        _names = names;
+        _namesAt = DateTime.Now;
     }
 
     // ===================== Kairn → iCloud =====================
@@ -139,6 +193,8 @@ public static class CalendarSync
     /// <summary>
     /// Fait remonter les tâches planifiées, et seulement dans le calendrier « Kairn ».
     /// Ce qui a disparu côté Kairn est retiré là-bas ; rien d'autre n'est jamais touché.
+    /// Une séance inchangée depuis son dernier envoi n'est pas renvoyée, sauf une fois par jour :
+    /// ce qui aurait été effacé à la main dans le calendrier « Kairn » revient alors.
     /// </summary>
     private static async Task PushAsync(CalendarAccount a, CancellationToken ct)
     {
@@ -146,27 +202,52 @@ public static class CalendarSync
         var from = today.AddDays(-DaysBefore);
         var to = today.AddDays(DaysAfter);
 
-        var mine = Storage.Data.Tasks
+        var wanted = Storage.Data.Tasks
             .Where(t => !t.IsExternal && !t.Floating && !t.IsBreak && t.Date >= from && t.Date <= to)
-            .ToList();
+            .ToDictionary(CalDav.OwnUid);
+        bool full = DateTime.Now - a.LastFullPush > TimeSpan.FromDays(1);
+        var pushed = a.Pushed.ToHashSet();
+        CalDavLog.Line($"push : {wanted.Count} tâche(s) dans la fenêtre, {pushed.Count} déjà là-bas{(full ? ", envoi complet du jour" : "")}");
 
-        var wanted = mine.ToDictionary(CalDav.OwnUid);
-        CalDavLog.Line($"push : {wanted.Count} tâche(s) à déposer, {a.Pushed.Count} déjà là-bas");
-        foreach (var (uid, task) in wanted)
+        int sent = 0, removed = 0;
+        bool dirty = false;
+        try
         {
-            ct.ThrowIfCancellationRequested();
-            await CalDav.PutAsync(a, a.WriteHref!, task, ct);
-        }
+            foreach (var (uid, task) in wanted)
+            {
+                ct.ThrowIfCancellationRequested();
+                var hash = IcsService.EventHash(task, uid);
+                if (!full && pushed.Contains(uid) && a.PushedHash.GetValueOrDefault(uid) == hash) continue;
+                await CalDav.PutAsync(a, a.WriteHref!, task, ct);
+                // Noté aussitôt : même si la suite échoue, Kairn sait ce qu'il a déposé là-bas (et pourra le retirer).
+                if (pushed.Add(uid)) a.Pushed.Add(uid);
+                a.PushedHash[uid] = hash;
+                dirty = true;
+                sent++;
+            }
 
-        // Supprimé ou déplacé hors de la fenêtre depuis la dernière fois : on retire ce qu'on avait posé.
-        foreach (var gone in a.Pushed.Where(uid => !wanted.ContainsKey(uid)).ToList())
+            // Supprimé ou déplacé hors de la fenêtre depuis la dernière fois : on retire ce qu'on avait posé.
+            foreach (var gone in pushed.Where(uid => !wanted.ContainsKey(uid)).ToList())
+            {
+                ct.ThrowIfCancellationRequested();
+                await CalDav.DeleteAsync(a, a.WriteHref!, gone, ct);
+                a.Pushed.Remove(gone);
+                a.PushedHash.Remove(gone);
+                dirty = true;
+                removed++;
+            }
+
+            if (full)
+            {
+                a.LastFullPush = DateTime.Now;
+                dirty = true;
+            }
+            CalDavLog.Line($"push : {sent} envoyée(s), {removed} retirée(s)");
+        }
+        finally
         {
-            ct.ThrowIfCancellationRequested();
-            await CalDav.DeleteAsync(a, a.WriteHref!, gone, ct);
+            if (dirty) Storage.SaveSettings();
         }
-
-        a.Pushed = [.. wanted.Keys];
-        Storage.SaveSettings();
     }
 
     /// <summary>Retire tout ce que Kairn a déposé sur iCloud (quand on décoche l'envoi).</summary>
@@ -180,6 +261,7 @@ public static class CalendarSync
         }
         catch { /* ce qui reste là-bas peut être supprimé à la main : on ne bloque pas le réglage */ }
         a.Pushed = [];
+        a.PushedHash = [];
         Storage.SaveSettings();
     }
 }

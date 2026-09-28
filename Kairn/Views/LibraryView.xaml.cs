@@ -26,6 +26,12 @@ public partial class LibraryView : UserControl, IRefreshable
         InitializeComponent();
         Focusable = true;
         MouseDown += (_, _) => Focus();
+        // Onglet quitté ou fenêtre cachée : les cartes et leurs miniatures sont libérées (elles reviennent vite, depuis le disque).
+        IsVisibleChanged += (_, _) =>
+        {
+            if (!IsVisible) Items.ItemsSource = null;
+            else if (Items.ItemsSource is null) ShowCategory();
+        };
         PreviewKeyDown += (_, e) =>
         {
             // Ctrl+V avec une image dans le presse-papier : on l'ajoute directement.
@@ -56,8 +62,8 @@ public partial class LibraryView : UserControl, IRefreshable
             rb.SetResourceReference(StyleProperty, "NavItem");
             // Sous-catégorie : décalée, avec un petit trait de rattachement à la place de la pastille.
             FrameworkElement marker = depth == 0
-                ? new Ellipse { Width = 8, Height = 8, Fill = new SolidColorBrush(ThemeService.Parse(c.Color, "#F2F2F2")), Margin = new Thickness(0, 0, 10, 0) }
-                : new Border { Width = 8, Height = 1.5, Background = new SolidColorBrush(ThemeService.Parse(c.Color, "#F2F2F2")), Margin = new Thickness(0, 0, 10, 0) };
+                ? new Ellipse { Width = 8, Height = 8, Fill = ThemeService.BrushFor(c.Color), Margin = new Thickness(0, 0, 10, 0) }
+                : new Border { Width = 8, Height = 1.5, Background = ThemeService.BrushFor(c.Color), Margin = new Thickness(0, 0, 10, 0) };
             var total = Storage.WithDescendants(c).Sum(x => x.Items.Count);
             var count = new TextBlock { Text = total.ToString(), FontSize = 12 };
             count.SetResourceReference(TextBlock.ForegroundProperty, "FaintBrush");
@@ -145,7 +151,7 @@ public partial class LibraryView : UserControl, IRefreshable
             var count = new TextBlock { Text = L.P("lib.items", total), FontSize = 11.5 };
             count.SetResourceReference(TextBlock.ForegroundProperty, "SubtleBrush");
             var bar = new Border { Width = 4, CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 0, 12, 0),
-                                   Background = new SolidColorBrush(ThemeService.Parse(sub.Color, "#F2F2F2")) };
+                                   Background = ThemeService.BrushFor(sub.Color) };
             var emoji = new TextBlock { Text = sub.Emoji, FontSize = 20, FontFamily = new FontFamily("Segoe UI Emoji"),
                                         VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) };
             var content = new StackPanel { Orientation = Orientation.Horizontal, Children = { bar, emoji, new StackPanel { Children = { name, count } } } };

@@ -47,6 +47,7 @@ public partial class SettingsView
         try
         {
             _calendars = await CalDav.ListAsync(a, CancellationToken.None);
+            CalendarSync.Remember(_calendars);
             BuildCalendarChips();
         }
         catch (CalDavException ex) { ShowCalStatus(L.T(ex.Key), error: true); }
@@ -103,6 +104,7 @@ public partial class SettingsView
         {
             account.HomeUrl = await CalDav.FindHomeAsync(account, CancellationToken.None);
             _calendars = await CalDav.ListAsync(account, CancellationToken.None);
+            CalendarSync.Remember(_calendars);
             // Rien n'est suivi d'office : c'est à la personne de dire quels calendriers elle accepte de partager.
             S.Calendar = account;
             Storage.SaveSettings();

@@ -35,7 +35,11 @@ public static class ThemeService
 
     private static readonly Dictionary<string, BitmapImage> ImageCache = [];
 
-    public static void Apply(ThemeDef t)
+    /// <summary>
+    /// Applique le thème. <paramref name="icon"/> : redessiner aussi l'icône (barre des tâches, zone de notification) ;
+    /// l'éditeur d'apparence ne le fait qu'à la fin d'un réglage, pas à chaque pas du curseur.
+    /// </summary>
+    public static void Apply(ThemeDef t, bool icon = true)
     {
         var r = Application.Current.Resources;
 
@@ -46,8 +50,11 @@ public static class ThemeService
         r["AccentColor"] = accent;
         r["AccentSoftBrush"] = Frozen(new SolidColorBrush(Color.FromArgb(t.Dark ? (byte)0x30 : (byte)0x26, accent.R, accent.G, accent.B)));
 
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (key, _, defaultColor) in ThemeTokens.ZoneKeys)
-            r["Zone" + key + "Brush"] = ZoneBrush(t, t.Zone(key), defaultColor);
+            r["Zone" + key + "Brush"] = ZoneBrush(t, t.Zone(key), defaultColor, used);
+        // Les images d'un thème précédent ne restent pas en mémoire (chacune pèse plusieurs Mo une fois décodée).
+        foreach (var path in ImageCache.Keys.Where(p => !used.Contains(p)).ToList()) ImageCache.Remove(path);
 
         try { r["AppFont"] = new FontFamily(t.Font); } catch { r["AppFont"] = new FontFamily("Segoe UI"); }
         r["Radius"] = new CornerRadius(t.Radius);
@@ -58,7 +65,7 @@ public static class ThemeService
         scale.Freeze();
         r["UiScale"] = scale;
         r["LogoBrush"] = Frozen(new SolidColorBrush(AppIcon.StonesColor(t)));
-        AppIcon.Apply(t);
+        if (icon) AppIcon.Apply(t);
 
         foreach (Window w in Application.Current.Windows) ApplyWindowChrome(w, t.Dark);
     }
@@ -67,10 +74,10 @@ public static class ThemeService
     /// Pinceau d'un bloc : sa couleur, ou son image recouverte d'un voile de la couleur du bloc
     /// (pour garder le texte lisible quelle que soit l'image).
     /// </summary>
-    private static Brush ZoneBrush(ThemeDef t, ZoneStyle z, string defaultColorKey)
+    private static Brush ZoneBrush(ThemeDef t, ZoneStyle z, string defaultColorKey, HashSet<string> usedImages)
     {
         var color = Parse(z.Color ?? t.Color(defaultColorKey), "#000000");
-        var image = LoadImage(z.Image);
+        var image = LoadImage(z.Image, usedImages);
 
         Brush brush;
         if (image is null)
@@ -91,10 +98,11 @@ public static class ThemeService
         return brush;
     }
 
-    private static BitmapImage? LoadImage(string? file)
+    private static BitmapImage? LoadImage(string? file, HashSet<string> used)
     {
         if (string.IsNullOrEmpty(file)) return null;
         var path = Path.IsPathRooted(file) ? file : Path.Combine(ThemesDir, file);
+        used.Add(path);
         if (ImageCache.TryGetValue(path, out var cached)) return cached;
         if (!File.Exists(path)) return null;
         try
@@ -169,6 +177,17 @@ public static class ThemeService
 
     public static string ToHex(Color c) =>
         c.A == 255 ? $"#{c.R:X2}{c.G:X2}{c.B:X2}" : $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}";
+
+    private static readonly Dictionary<string, SolidColorBrush> BrushCache = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Pinceau figé d'une couleur (de catégorie…), partagé : pas un nouveau par ligne, bloc ou pastille.</summary>
+    public static SolidColorBrush BrushFor(string? hex, string fallback = "#F2F2F2")
+    {
+        var key = hex ?? fallback;
+        if (!BrushCache.TryGetValue(key, out var brush))
+            BrushCache[key] = brush = Frozen(new SolidColorBrush(Parse(hex, fallback)));
+        return brush;
+    }
 
     private static T Frozen<T>(T f) where T : Freezable { f.Freeze(); return f; }
 

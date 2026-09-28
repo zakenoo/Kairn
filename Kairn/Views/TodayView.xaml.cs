@@ -29,12 +29,53 @@ public partial class TodayView : UserControl, IRefreshable
         _timer.Tick += (_, _) => Tick();
         _feedbackTimer.Tick += (_, _) => { _feedbackTimer.Stop(); Feedback.Text = ""; };
         InitSide();
-        // Le chrono ne tourne que si la vue est réellement affichée (pas quand l'app est dans la barre des tâches).
-        IsVisibleChanged += (_, _) =>
+        InitPulse();
+        // Le chrono ne tourne que si la page est vraiment à l'écran : ni fenêtre cachée, ni réduite, ni autre onglet.
+        // Les données, elles, sont remises à jour par la fenêtre principale quand elles ont changé.
+        IsVisibleChanged += (_, _) => UpdateActivity();
+        Loaded += (_, _) =>
         {
-            if (IsVisible) { Refresh(); _timer.Start(); }
-            else _timer.Stop();
+            _window = Window.GetWindow(this);
+            if (_window != null) _window.StateChanged += OnWindowStateChanged;
+            UpdateActivity();
         };
+        Unloaded += (_, _) =>
+        {
+            if (_window != null) _window.StateChanged -= OnWindowStateChanged;
+            _window = null;
+            UpdateActivity();
+        };
+    }
+
+    private Window? _window;
+    private bool _active;
+
+    private void OnWindowStateChanged(object? sender, EventArgs e) => UpdateActivity();
+
+    /// <summary>
+    /// Démarre ou arrête ce qui tourne pour cette page (chrono, relève des mails, pastille).
+    /// Au retour à l'écran, le compte à rebours et les mails sont remis à jour tout de suite.
+    /// </summary>
+    private void UpdateActivity()
+    {
+        bool active = IsVisible && _window is { WindowState: not WindowState.Minimized };
+        if (active != _active)
+        {
+            _active = active;
+            if (active)
+            {
+                _timer.Start();
+                _mailTimer.Start();
+                Tick();
+                FetchMail(force: false);
+            }
+            else
+            {
+                _timer.Stop();
+                _mailTimer.Stop();
+            }
+        }
+        UpdatePulse();
     }
 
     public void Refresh()
@@ -115,24 +156,37 @@ public partial class TodayView : UserControl, IRefreshable
         PlanTask? current = null;
         foreach (var task in _tasks)
         {
-            bool isCurrent = task.Start <= t && (task.End > t || task.End <= task.Start);
-            task.IsCurrent = isCurrent;
-            task.IsPast = !isCurrent && task.End <= t && task.End > task.Start;
-            if (isCurrent && current is null) current = task;
+            bool inSlot = task.Start <= t && (task.End > t || task.End <= task.Start);
+            task.IsPast = !inSlot && task.End <= t && task.End > task.Start;
+            // Deux tâches sur le même créneau (une finie en avance, puis la suivante avancée) : c'est celle qui reste à faire qui compte.
+            if (inSlot && (current is null || (current.Done && !task.Done))) current = task;
         }
+        foreach (var task in _tasks) task.IsCurrent = ReferenceEquals(task, current);
         var next = _tasks.FirstOrDefault(x => x.Start > t);
 
-        if (_tasks.Count == 0) { NowCard.Visibility = Visibility.Collapsed; return; }
+        if (_tasks.Count == 0) { NowCard.Visibility = Visibility.Collapsed; UpdatePulse(); return; }
         NowCard.Visibility = Visibility.Visible;
+        UpdatePulse();
 
         if (current != null)
         {
             var end = current.End > current.Start ? current.End : current.End + TimeSpan.FromDays(1);
             var nextText = next != null ? L.F("today.nextTask", PlanTask.Fmt(next.Start), next.Title) : L.T("today.lastBlock");
-            if (!ShowRhythm(current, now, nextText))
+            var progress = (t - current.Start).TotalSeconds / Math.Max(1, current.Duration.TotalSeconds);
+            if (current.Done)
+            {
+                // Finie en avance : le compte à rebours continue (un clic de travers se rattrape en décochant),
+                // mais la carte le dit, et propose de commencer tout de suite la tâche suivante.
+                // Un rendez-vous iCloud ne se déplace pas : pas de proposition s'il vient ensuite.
+                var upcoming = _tasks.FirstOrDefault(x => x.Start > t && !x.Done);
+                ShowCard(current, L.T("today.label.done"), Clock(end - t), L.T("today.remaining"), progress, isNow: true,
+                         advance: upcoming is { IsExternal: false } ? upcoming : null);
+                NextText.Text = nextText;
+            }
+            else if (!ShowRhythm(current, now, nextText))
             {
                 ShowCard(current, L.T(current.IsBreak ? "today.label.break" : "today.label.now"), Clock(end - t), L.T("today.remaining"),
-                         (t - current.Start).TotalSeconds / Math.Max(1, current.Duration.TotalSeconds), isNow: true);
+                         progress, isNow: true);
                 NextText.Text = nextText;
             }
         }
@@ -149,9 +203,17 @@ public partial class TodayView : UserControl, IRefreshable
 
     private PlanTask? _shown;
 
-    private void ShowCard(PlanTask task, string label, string remaining, string remainingLabel, double progress, bool isNow, bool rhythm = false)
+    /// <param name="advance">Tâche suivante qu'on peut commencer tout de suite (tâche en cours finie en avance), sinon null.</param>
+    private void ShowCard(PlanTask task, string label, string remaining, string remainingLabel, double progress, bool isNow,
+                          bool rhythm = false, PlanTask? advance = null)
     {
         NowLabel.Text = label;
+        // Tâche finie : la pastille ne respire plus, rien n'est « en direct ».
+        _calm = isNow && task.Done;
+        UpdatePulse();
+        NowNext.Visibility = advance != null ? Visibility.Visible : Visibility.Collapsed;
+        NowNext.Tag = advance;
+        NowNext.ToolTip = advance is null ? null : L.F("today.nextNow.tip", advance.Title);
         NowRange.Text = $"{task.TimeRange} · {task.DurationText}";
         if (!rhythm) RhythmBar.Visibility = Visibility.Collapsed;
         Remaining.Text = remaining;
@@ -222,6 +284,9 @@ public partial class TodayView : UserControl, IRefreshable
         Remaining.Text = "";
         RemainingLabel.Text = "";
         NowDone.Visibility = Visibility.Collapsed;
+        NowNext.Visibility = Visibility.Collapsed;
+        _calm = false;
+        UpdatePulse();
         NowPostpone.Visibility = left > 0 ? Visibility.Visible : Visibility.Collapsed;
         NowPostpone.Tag = "all";
         NowPostponeText.Text = L.T("today.postponeNow");
@@ -367,6 +432,28 @@ public partial class TodayView : UserControl, IRefreshable
         _shown = null;
         Tick();
         ApplyFocus();
+    }
+
+    /// <summary>
+    /// Tâche finie en avance : la suivante commence maintenant, avec la même durée (et ses étapes, liens, rythme…).
+    /// La tâche finie garde son créneau : rien ne se retire du temps de travail de la journée.
+    /// </summary>
+    private void NowNext_Click(object sender, RoutedEventArgs e)
+    {
+        if (NowNext.Tag is not PlanTask next || next.Done || next.IsExternal) return;
+        var now = DateTime.Now;
+        var length = next.Duration;
+        var start = new TimeSpan(now.Hour, now.Minute, 0);
+        var end = start + length;
+        if (end.TotalHours >= 24) end -= TimeSpan.FromDays(1); // passe minuit
+        next.Start = start;
+        next.End = end;
+        next.CarriedFrom = null;
+        // Lancée à la main à l'instant : pas de rappel « c'est l'heure » dans la foulée.
+        Reminders.Mute(next, now);
+        Storage.Save();
+        _shown = null;
+        Refresh(); // l'ordre du programme change
     }
 
     // ===================== L'essentiel =====================

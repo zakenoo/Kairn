@@ -147,19 +147,30 @@ public static class InstalledApps
         ImageSource? img = null;
         try
         {
-            using var icon = path.EndsWith(".ico", StringComparison.OrdinalIgnoreCase)
-                ? new System.Drawing.Icon(path, 48, 48)
-                : System.Drawing.Icon.ExtractAssociatedIcon(path);
-            if (icon != null)
+            // 48 px (en haut) et 16 px (en bas) : la tuile l'affiche en 30, net même sur un écran agrandi.
+            if (SHDefExtractIcon(path, 0, 0, out var large, out var small, 48 | (16 << 16)) == 0 && large != IntPtr.Zero)
             {
-                var src = Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                src.Freeze();
-                img = src;
+                try
+                {
+                    var src = Imaging.CreateBitmapSourceFromHIcon(large, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                    src.Freeze();
+                    img = src;
+                }
+                finally
+                {
+                    DestroyIcon(large);
+                    if (small != IntPtr.Zero) DestroyIcon(small);
+                }
             }
         }
         catch { }
-        return IconCache[path] = img;
+        // Pas d'icône dans le fichier : celle que Windows lui associe (comme l'Explorateur).
+        return IconCache[path] = img ?? Launcher.Icon(path);
     }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SHDefExtractIcon(string iconFile, int index, uint flags, out IntPtr large, out IntPtr small, uint iconSize);
+    [DllImport("user32.dll")] private static extern bool DestroyIcon(IntPtr icon);
 
     // ---- Chemin d'un processus sans énumérer tout le système ----
 

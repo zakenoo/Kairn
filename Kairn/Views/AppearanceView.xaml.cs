@@ -16,6 +16,7 @@ public partial class AppearanceView : UserControl, IRefreshable
         ["Segoe UI Variable Display", "Segoe UI", "Bahnschrift", "Georgia", "Cascadia Code", "Consolas", "Palatino Linotype", "Trebuchet MS"];
 
     private readonly DispatcherTimer _applyTimer = new() { Interval = TimeSpan.FromMilliseconds(60) };
+    private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(600) };
     private List<string>? _systemFonts;
     private Action<Color>? _pickerTarget;
     private bool _loading = true; // vrai jusqu'au premier Refresh : les curseurs déclenchent ValueChanged dès InitializeComponent
@@ -26,14 +27,17 @@ public partial class AppearanceView : UserControl, IRefreshable
     public AppearanceView()
     {
         InitializeComponent();
-        // Les changements en rafale (glisser dans le sélecteur de couleur) sont regroupés.
+        // Les changements en rafale (glisser dans le sélecteur de couleur) sont regroupés : l'interface suit en direct,
+        // tandis que l'icône de la barre des tâches et le fichier des réglages attendent la fin du geste.
         _applyTimer.Tick += (_, _) =>
         {
             _applyTimer.Stop();
-            ThemeService.Apply(T);
-            Storage.SaveSettings();
-            UpdateIconPreview(); // l'icône suit aussi la couleur d'accent et le fond
+            ThemeService.Apply(T, icon: false);
+            UpdateIconPreview(); // l'aperçu de l'icône suit aussi la couleur d'accent et le fond
         };
+        _saveTimer.Tick += (_, _) => SaveNow();
+        // Page quittée (ou fenêtre cachée) avant la fin du délai : rien ne se perd.
+        IsVisibleChanged += (_, _) => { if (!IsVisible && _saveTimer.IsEnabled) SaveNow(); };
         Picker.ColorChanged += c => _pickerTarget?.Invoke(c);
         ScaleSlider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler((_, _) => _scaleDragging = true));
     }
@@ -42,6 +46,15 @@ public partial class AppearanceView : UserControl, IRefreshable
     {
         _applyTimer.Stop();
         _applyTimer.Start();
+        _saveTimer.Stop();
+        _saveTimer.Start();
+    }
+
+    private void SaveNow()
+    {
+        _saveTimer.Stop();
+        AppIcon.Apply(T);
+        Storage.SaveSettings();
     }
 
     /// <summary>Applique tout de suite et reconstruit l'éditeur (après un changement de thème complet).</summary>

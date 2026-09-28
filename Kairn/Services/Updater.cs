@@ -30,14 +30,20 @@ public static class Updater
 
     private static System.Windows.Threading.DispatcherTimer? _timer;
 
-    /// <summary>Vérifie au démarrage puis une fois par jour, si l'option est activée.</summary>
-    public static void StartAutoCheck()
+    /// <summary>
+    /// Vérifie au démarrage puis une fois par jour, si l'option est activée.
+    /// <paramref name="delay"/> : attente avant la première vérification (ouverture de session).
+    /// </summary>
+    public static void StartAutoCheck(TimeSpan delay = default)
     {
         if (_timer != null) { _ = CheckAsync(); return; }
         _timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromHours(24) };
         _timer.Tick += async (_, _) => await CheckAsync();
         _timer.Start();
-        _ = CheckAsync();
+        if (delay <= TimeSpan.Zero) { _ = CheckAsync(); return; }
+        var first = new System.Windows.Threading.DispatcherTimer { Interval = delay };
+        first.Tick += (_, _) => { first.Stop(); _ = CheckAsync(); };
+        first.Start();
     }
 
     /// <summary>Renvoie la mise à jour disponible, ou null. Ne lève pas d'exception sauf si <paramref name="manual"/>.</summary>

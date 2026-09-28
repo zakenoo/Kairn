@@ -131,7 +131,7 @@ Twelve ready-made themes, and everything is editable: all twelve interface color
   <img src="docs/screenshots/setup-look.png" alt="Setup: pick your look" width="440">
 </p>
 
-**Requirements:** Windows 10 or 11, 64-bit. About 100 MB of disk space. Nothing else to install: the setup contains everything Kairn needs.
+**Requirements:** Windows 10 or 11, 64-bit. About 250 MB of disk space. Nothing else to install: the setup contains everything Kairn needs.
 
 **No administrator rights needed.** Kairn installs in `%LocalAppData%\Programs\Kairn`, adds a Start menu shortcut, and, only if you ask for it, a desktop shortcut and a launch at Windows startup.
 
@@ -158,9 +158,10 @@ Kairn has **no account, no telemetry, no analytics, no crash reporting and no ad
 | **Local AI model download** | Once, when you click *Install* in Settings | Nothing about you: a plain file download | GitHub (llama.cpp engine) and Hugging Face (model) |
 | **Online AI mode** | Only if you add an API key *and* choose “Online” for a goal | Your goal and your answers to the assistant's questions. **Never your calendar, notes, library or mail.** | The provider you configured (Anthropic, OpenAI…) |
 | **Update check** | Only if enabled, once a day, or when you click *Check now* | A standard request asking for the latest version number | GitHub |
+| **Website icons** | Once per website, when you add it to your work tools | Nothing about you: a plain request for the site's icon, without cookies | That website only, never a third-party icon service |
 | **Links you open** | When you click one | A normal visit in your browser | That website |
 
-**Where your data lives:** `%AppData%\Kairn`, as readable JSON files (`data.json`, `settings.json`) plus a `library` folder for your files. Back it up or move it to another PC by copying that folder.
+**Where your data lives:** `%AppData%\Kairn`, as readable JSON files (`data.json`, `settings.json`) plus a `library` folder for your files. A `cache` folder keeps thumbnails and icons; you can delete it at any time. Back it up or move it to another PC by copying that folder.
 
 **Secrets are encrypted.** Your mail password, your calendar password and your API key are encrypted with Windows DPAPI: only your Windows account, on this PC, can decrypt them. (It also means you'll re-enter them after moving to a new PC.)
 
@@ -195,7 +196,7 @@ No. Everything works offline. Only the optional features listed in [Privacy](#pr
 <details>
 <summary><b>Will it slow down my PC or my games?</b></summary>
 
-Kairn uses around 100–170 MB of RAM and well under 1% of the processor while it sits in the background. The guard only reads one process name every two seconds, during work blocks. The local AI model never runs in the background: it only starts while it's generating a plan, then frees its memory.
+In the background, Kairn takes about 30 MB of memory in Task Manager and practically no processor time: nothing is drawn or refreshed while its window is hidden or minimized. The guard only reads one process name every two seconds, during work blocks. The local AI model never runs in the background: it only starts while it's generating a plan, then frees its memory.
 </details>
 
 <details>
@@ -211,9 +212,9 @@ No. Those subscriptions only work in the official apps, and connecting them to t
 </details>
 
 <details>
-<summary><b>Why is the download around 100 MB?</b></summary>
+<summary><b>Why is the download around 200 MB?</b></summary>
 
-The setup includes the .NET runtime, so you don't have to install anything else. Kairn itself is small.
+The setup includes the .NET runtime, so you don't have to install anything else. It is also left uncompressed on purpose: Windows can then load Kairn straight from the file instead of unpacking it into memory at every launch, which halves the memory Kairn uses and makes it start faster. Kairn itself is small.
 </details>
 
 <details>

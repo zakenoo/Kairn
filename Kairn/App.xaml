@@ -13,7 +13,6 @@
             <v:NotNullToVisibilityConverter x:Key="NotNullVis"/>
             <v:ResourceIconConverter x:Key="ResIcon"/>
             <v:HexToBrushConverter x:Key="HexBrush"/>
-            <v:ThumbConverter x:Key="Thumb"/>
             <v:SubtitleConverter x:Key="Subtitle"/>
         </ResourceDictionary>
     </Application.Resources>

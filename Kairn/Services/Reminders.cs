@@ -45,6 +45,19 @@ public static class Reminders
 
     public static void Cancel(PlanTask t) => Snoozed.RemoveAll(s => s.Task.Id == t.Id);
 
+    /// <summary>Rappels à taire, par tâche, jusqu'à cet instant.</summary>
+    private static readonly Dictionary<string, DateTime> Muted = [];
+
+    /// <summary>
+    /// Tâche lancée à la main à l'instant (« passer à la suivante ») : pas de rappel « c'est l'heure » dans la foulée.
+    /// Si elle est redéplacée plus tard dans la journée, ses rappels reviennent normalement.
+    /// </summary>
+    public static void Mute(PlanTask t, DateTime until)
+    {
+        Cancel(t);
+        Muted[t.Id] = until;
+    }
+
     private static void Tick()
     {
         var now = DateTime.Now;
@@ -60,15 +73,17 @@ public static class Reminders
         }
 
         var today = DateOnly.FromDateTime(now);
+        foreach (var id in Muted.Where(m => now - m.Value > TimeSpan.FromHours(1)).Select(m => m.Key).ToList()) Muted.Remove(id);
         foreach (var task in Storage.Data.Tasks)
         {
             if (task.Done || task.IsBreak || task.Floating) continue;
             if (task.Date < today || task.Date > today.AddDays(1)) continue;
             var start = task.Date.ToDateTime(TimeOnly.FromTimeSpan(task.Start));
+            var muted = Muted.GetValueOrDefault(task.Id, DateTime.MinValue);
             foreach (var minutes in For(task))
             {
                 var moment = start.AddMinutes(-minutes);
-                if (moment > from && moment <= now) Raise(task, minutes);
+                if (moment > from && moment <= now && moment > muted) Raise(task, minutes);
             }
         }
     }

@@ -262,6 +262,10 @@ public class CalendarAccount
     public bool Push { get; set; }
     /// <summary>Identifiants des événements que Kairn a déposés là-bas (pour savoir lesquels retirer).</summary>
     public List<string> Pushed { get; set; } = [];
+    /// <summary>Empreinte de chaque séance déposée (identifiant → empreinte) : seules celles qui ont changé repartent.</summary>
+    public Dictionary<string, string> PushedHash { get; set; } = [];
+    /// <summary>Dernier envoi complet : une fois par jour, tout repart, au cas où une séance aurait été effacée là-bas.</summary>
+    public DateTime LastFullPush { get; set; }
     public DateTime LastSync { get; set; }
 }
 

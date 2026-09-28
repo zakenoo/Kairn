@@ -20,11 +20,8 @@ public partial class TodayView
 
     private static AppSettings S => Storage.Settings;
 
-    private void InitSide()
-    {
-        _mailTimer.Tick += (_, _) => FetchMail(force: true);
-        IsVisibleChanged += (_, _) => { if (IsVisible) _mailTimer.Start(); else _mailTimer.Stop(); };
-    }
+    // La relève périodique ne tourne que page à l'écran (voir UpdateActivity).
+    private void InitSide() => _mailTimer.Tick += (_, _) => FetchMail(force: true);
 
     private void RefreshSide()
     {
@@ -85,7 +82,12 @@ public partial class TodayView
     private void RefreshTools()
     {
         ToolsPanel.Children.Clear();
-        foreach (var tool in S.Tools) ToolsPanel.Children.Add(ToolTile(tool));
+        foreach (var tool in S.Tools)
+        {
+            ToolsPanel.Children.Add(ToolTile(tool));
+            // Site dont on n'a pas encore l'icône : on la demande au site, une fois (voir Favicons).
+            if (Launcher.IsUrl(tool.Target) && Favicons.Cached(tool.Target) is null) FetchFavicon(tool.Target);
+        }
         ToolsEmpty.Visibility = S.Tools.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ToolsManager.Visibility = _toolsManage ? Visibility.Visible : Visibility.Collapsed;
         ToolsManageBtn.Content = L.T(_toolsManage ? "tools.done" : S.Tools.Count == 0 ? "tools.addShort" : "tools.manage");
@@ -119,6 +121,11 @@ public partial class TodayView
         x.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
         x.SetResourceReference(TextBlock.ForegroundProperty, "DangerBrush");
         return new Grid { Children = { tile, x } };
+    }
+
+    private async void FetchFavicon(string url)
+    {
+        if (await Favicons.FetchAsync(url)) RefreshTools();
     }
 
     private void ToolsManage_Click(object sender, RoutedEventArgs e)

@@ -32,8 +32,15 @@ public static class AppIcon
         var key = $"{stones}{tile}";
         if (key == _key) return;
         _key = key;
-        _ico = BuildIco(stones, tile);
-        var frame = BitmapFrame.Create(new MemoryStream(_ico), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+        _ico = LoadOrBuild(stones, tile, key);
+        BitmapFrame frame;
+        try { frame = BitmapFrame.Create(new MemoryStream(_ico), BitmapCreateOptions.None, BitmapCacheOption.OnLoad); }
+        catch
+        {
+            // Fichier gardé abîmé : on redessine l'icône.
+            _ico = BuildIco(stones, tile);
+            frame = BitmapFrame.Create(new MemoryStream(_ico), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+        }
         frame.Freeze();
         Window = frame;
         foreach (System.Windows.Window w in Application.Current.Windows) w.Icon = frame;
@@ -42,6 +49,35 @@ public static class AppIcon
 
     /// <summary>Icône actuelle au format .ico (pour la zone de notification).</summary>
     public static byte[]? Ico => _ico;
+
+    /// <summary>À changer si le dessin de l'icône change : les icônes gardées sur le disque seront refaites.</summary>
+    private const int DrawingVersion = 1;
+
+    /// <summary>
+    /// Dessiner l'icône en huit tailles coûtait ~160 ms à chaque lancement : elle est gardée sur le disque,
+    /// une seule à la fois (celle des couleurs actuelles), et refaite seulement quand les couleurs changent.
+    /// </summary>
+    private static byte[] LoadOrBuild(Color stones, Color tile, string key)
+    {
+        var dir = Path.Combine(Storage.Root, "cache");
+        var file = Path.Combine(dir, $"icon-{DrawingVersion}-{key.Replace("#", "")}.ico");
+        try
+        {
+            if (File.Exists(file)) return File.ReadAllBytes(file);
+        }
+        catch { /* illisible : on la refait */ }
+
+        var ico = BuildIco(stones, tile);
+        try
+        {
+            Directory.CreateDirectory(dir);
+            foreach (var old in Directory.GetFiles(dir, "icon-*.ico")) File.Delete(old);
+            File.WriteAllBytes(file + ".tmp", ico);
+            File.Move(file + ".tmp", file, overwrite: true);
+        }
+        catch { /* pas de cache cette fois : ce n'est qu'un gain de temps */ }
+        return ico;
+    }
 
     /// <summary>Aperçu pour l'onglet Apparence.</summary>
     public static BitmapSource Render(int size, Color stones, Color tile)

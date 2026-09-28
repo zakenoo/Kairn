@@ -10,7 +10,8 @@ namespace Kairn.Services;
 public static class CalDavLog
 {
     private static readonly object Lock = new();
-    private const int MaxLines = 300;
+    /// <summary>Taille au-delà de laquelle on ne garde que la fin du journal (environ la moitié).</summary>
+    private const int TrimAbove = 64 * 1024;
 
     public static string Path => System.IO.Path.Combine(Storage.Root, "calendar.log");
 
@@ -24,7 +25,8 @@ public static class CalDavLog
             try
             {
                 File.AppendAllText(Path, $"[{DateTime.Now:HH:mm:ss}] {text}{Environment.NewLine}", Utf8);
-                Trim();
+                // Le fichier n'est relu que lorsqu'il a vraiment grossi (avant : à chaque ligne écrite).
+                if (new FileInfo(Path).Length > TrimAbove) Trim();
             }
             catch { /* le journal ne doit jamais empêcher la synchro */ }
         }
@@ -34,8 +36,10 @@ public static class CalDavLog
     private static void Trim()
     {
         var lines = File.ReadAllLines(Path, Utf8);
-        if (lines.Length <= MaxLines * 2) return;
-        File.WriteAllLines(Path, lines[^MaxLines..], Utf8);
+        int keep = 0, bytes = 0;
+        for (int i = lines.Length - 1; i >= 0 && bytes < TrimAbove / 2; i--, keep++)
+            bytes += Utf8.GetByteCount(lines[i]) + 2;
+        File.WriteAllLines(Path, lines[^keep..], Utf8);
     }
 
     public static void Clear()

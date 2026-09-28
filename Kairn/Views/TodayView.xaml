@@ -70,17 +70,8 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                             <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="{DynamicResource RadiusPill}" Padding="10,3">
                                 <StackPanel Orientation="Horizontal">
-                                    <Ellipse x:Name="LiveDot" Width="7" Height="7" Fill="{DynamicResource AccentBrush}" Margin="0,0,7,0">
-                                        <Ellipse.Triggers>
-                                            <EventTrigger RoutedEvent="Loaded">
-                                                <BeginStoryboard>
-                                                    <Storyboard RepeatBehavior="Forever" AutoReverse="True" Timeline.DesiredFrameRate="12">
-                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1" To="0.25" Duration="0:0:1.1"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Ellipse.Triggers>
-                                    </Ellipse>
+                                    <!-- Pastille « en direct » : elle respire, pilotée depuis le code (voir TodayView.Pulse.cs) -->
+                                    <Ellipse x:Name="LiveDot" Width="7" Height="7" Fill="{DynamicResource AccentBrush}" Margin="0,0,7,0"/>
                                     <TextBlock x:Name="NowLabel" Text="{l:T today.label.now}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
                                 </StackPanel>
                             </Border>
@@ -157,6 +148,14 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource Icon}" Text="&#xE73E;" FontSize="12" Margin="0,0,8,0"/>
                                 <TextBlock Text="{l:T today.done}"/>
+                            </StackPanel>
+                        </Button>
+                        <!-- Finie en avance : la tâche suivante peut commencer tout de suite -->
+                        <Button x:Name="NowNext" Style="{StaticResource Primary}" Margin="0,16,0,0" HorizontalAlignment="Right"
+                                Click="NowNext_Click" Visibility="Collapsed">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE893;" FontSize="12" Margin="0,0,8,0"/>
+                                <TextBlock Text="{l:T today.nextNow}"/>
                             </StackPanel>
                         </Button>
                         <Button x:Name="NowPostpone" Style="{StaticResource Ghost}" Margin="0,6,0,0" HorizontalAlignment="Right"

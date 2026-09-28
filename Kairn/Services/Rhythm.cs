@@ -50,13 +50,18 @@ public static class Rhythm
     }
 
     /// <summary>Rythme réellement appliqué : celui de la tâche, ou le rythme automatique des tâches longues.</summary>
-    public static Spec? For(PlanTask t)
+    public static Spec? For(PlanTask t) => Resolve(t).Spec;
+
+    /// <summary>Le rythme et son découpage, calculés une seule fois (avant : deux fois pour chaque tâche rythmée).</summary>
+    private static (Spec? Spec, List<Segment> Segments) Resolve(PlanTask t)
     {
-        if (t.IsBreak || t.Floating || t.IsExternal) return null; // un rendez-vous ne se découpe pas en pomodoros
-        if (t.Rhythm == Off) return null;
+        if (t.IsBreak || t.Floating || t.IsExternal) return (null, []); // un rendez-vous ne se découpe pas en pomodoros
+        if (t.Rhythm == Off) return (null, []);
         var spec = t.Rhythm != null ? Parse(t.Rhythm)
             : t.Duration.TotalMinutes >= Storage.Settings.AutoRhythmMinMinutes ? Parse(Storage.Settings.AutoRhythm) : null;
-        return spec != null && Segments(t.Duration, spec).Count > 1 ? spec : null;
+        if (spec is null) return (null, []);
+        var segments = Segments(t.Duration, spec);
+        return segments.Count > 1 ? (spec, segments) : (null, []);
     }
 
     /// <summary>Découpage d'un bloc en sessions et pauses, en décalage depuis le début du bloc.</summary>
@@ -85,7 +90,7 @@ public static class Rhythm
         return list;
     }
 
-    public static List<Segment> Segments(PlanTask t) => For(t) is { } s ? Segments(t.Duration, s) : [];
+    public static List<Segment> Segments(PlanTask t) => Resolve(t).Segments;
 
     /// <summary>Temps écoulé depuis le début de la tâche (gère les blocs qui passent minuit).</summary>
     public static TimeSpan Elapsed(PlanTask t, DateTime now)

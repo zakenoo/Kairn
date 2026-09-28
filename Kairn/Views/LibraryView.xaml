@@ -160,12 +160,9 @@
                                     <Border.ContextMenu><ContextMenu/></Border.ContextMenu>
                                     <Grid>
                                     <StackPanel>
+                                        <!-- Miniature chargée en arrière-plan (voir ThumbnailLoader) -->
                                         <Border x:Name="thumb" Height="140" CornerRadius="{DynamicResource Radius}" Margin="6,6,6,0"
-                                                Visibility="Collapsed">
-                                            <Border.Background>
-                                                <ImageBrush ImageSource="{Binding Converter={StaticResource Thumb}}" Stretch="UniformToFill"/>
-                                            </Border.Background>
-                                        </Border>
+                                                Visibility="Collapsed" l:ThumbnailLoader.Item="{Binding}"/>
                                         <StackPanel Margin="14,12,14,14">
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                                 <TextBlock Style="{StaticResource Icon}" FontSize="12" Foreground="{DynamicResource AccentBrush}"

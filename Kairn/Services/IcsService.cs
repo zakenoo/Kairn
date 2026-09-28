@@ -69,7 +69,16 @@ public static class IcsService
     }
 
     /// <summary>Écrit un seul événement, prêt à être déposé sur un serveur CalDAV.</summary>
-    public static string EventText(PlanTask t, string uid)
+    public static string EventText(PlanTask t, string uid) => EventText(t, uid, DateTime.UtcNow);
+
+    /// <summary>
+    /// Empreinte du contenu d'une séance, sans l'horodatage (qui change à chaque écriture) :
+    /// la synchro ne renvoie que les séances qui ont changé.
+    /// </summary>
+    public static string EventHash(PlanTask t, string uid) =>
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(EventText(t, uid, DateTime.UnixEpoch))))[..20];
+
+    private static string EventText(PlanTask t, string uid, DateTime stampUtc)
     {
         var start = t.Date.ToDateTime(TimeOnly.MinValue) + t.Start;
         var end = start + t.Duration;
@@ -77,7 +86,7 @@ public static class IcsService
         sb.Append("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Kairn//FR\r\nCALSCALE:GREGORIAN\r\n");
         sb.Append("BEGIN:VEVENT\r\n");
         sb.Append($"UID:{uid}\r\n");
-        sb.Append($"DTSTAMP:{DateTime.UtcNow:yyyyMMdd'T'HHmmss'Z'}\r\n");
+        sb.Append($"DTSTAMP:{stampUtc:yyyyMMdd'T'HHmmss'Z'}\r\n");
         // En UTC : le serveur et le téléphone n'ont aucune raison d'être dans le même fuseau que ce PC.
         sb.Append($"DTSTART:{start.ToUniversalTime():yyyyMMdd'T'HHmmss'Z'}\r\n");
         sb.Append($"DTEND:{end.ToUniversalTime():yyyyMMdd'T'HHmmss'Z'}\r\n");

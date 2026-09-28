@@ -420,10 +420,15 @@ public partial class PlanningView : UserControl, IRefreshable
         }
     }
 
-    /// <summary>Icône d'une cible (vraie icône pour un programme, pictogramme pour un site).</summary>
+    /// <summary>Icône d'une cible : celle du programme, celle du site si on l'a déjà (voir Favicons), sinon un pictogramme.</summary>
     public static FrameworkElement LinkIcon(string target, double size)
     {
-        if (Launcher.Icon(target) is { } img) return new Image { Source = img, Width = size, Height = size, VerticalAlignment = VerticalAlignment.Center };
+        if ((Launcher.IsUrl(target) ? Favicons.Cached(target) : Launcher.Icon(target)) is { } img)
+        {
+            var image = new Image { Source = img, Width = size, Height = size, VerticalAlignment = VerticalAlignment.Center };
+            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality); // icône de site réduite proprement
+            return image;
+        }
         var glyph = new TextBlock { Text = Launcher.Glyph(target), FontSize = size * 0.85, VerticalAlignment = VerticalAlignment.Center };
         glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
         glyph.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");

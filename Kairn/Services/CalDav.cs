@@ -34,24 +34,45 @@ public static class CalDav
     private static readonly HttpMethod Report = new("REPORT");
     private static readonly HttpMethod MkCalendar = new("MKCALENDAR");
 
+    private static readonly object ClientLock = new();
+    private static (string Key, HttpClient Http)? _client;
+
+    /// <summary>
+    /// Client HTTP partagé tant que le compte ne change pas : ses connexions servent d'une requête à l'autre.
+    /// Avant, chaque requête ouvrait sa propre connexion chiffrée, avec une poignée de main TLS à chaque fois.
+    /// </summary>
     private static HttpClient Client(CalendarAccount a)
     {
-        var password = Secret.Unprotect(a.ProtectedPassword ?? "") ?? throw new CalDavException("cal.err.auth");
-        var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = true }) { Timeout = TimeSpan.FromSeconds(30) };
-        http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            "Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{a.User}:{password}")));
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("Kairn/1.0");
-        return http;
+        var key = a.User + "\n" + a.ProtectedPassword;
+        lock (ClientLock)
+        {
+            if (_client is { } c && c.Key == key) return c.Http;
+            var password = Secret.Unprotect(a.ProtectedPassword ?? "") ?? throw new CalDavException("cal.err.auth");
+            var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = true }) { Timeout = TimeSpan.FromSeconds(30) };
+            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{a.User}:{password}")));
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("Kairn/1.0");
+            _client = (key, http);
+            return http;
+        }
     }
 
+    /// <summary>Compte délié : le client (et l'identifiant qu'il porte) ne reste pas en mémoire.</summary>
+    public static void Forget()
+    {
+        lock (ClientLock) _client = null;
+    }
+
+    // Les réponses sont lues et analysées hors du fil de l'interface (ConfigureAwait(false)) ;
+    // les appelants, eux, reviennent sur le fil de l'interface pour toucher aux données.
     private static async Task<XDocument> SendAsync(HttpClient http, HttpMethod method, string url, string? body, int depth, CancellationToken ct)
     {
         using var req = new HttpRequestMessage(method, url);
         req.Headers.Add("Depth", depth.ToString());
         if (body != null) req.Content = new StringContent(body, Encoding.UTF8, "application/xml");
-        using var res = await http.SendAsync(req, ct);
+        using var res = await http.SendAsync(req, ct).ConfigureAwait(false);
 
-        var text = await res.Content.ReadAsStringAsync(ct);
+        var text = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         CalDavLog.Line($"{method.Method} {url} -> {(int)res.StatusCode} {res.ReasonPhrase} ({text.Length} o)");
 
         if (res.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) throw new CalDavException("cal.err.auth");
@@ -86,19 +107,19 @@ public static class CalDav
     /// </summary>
     public static async Task<string> FindHomeAsync(CalendarAccount a, CancellationToken ct)
     {
-        using var http = Client(a);
+        var http = Client(a);
 
         var principalBody = $"""
             <d:propfind xmlns:d="DAV:"><d:prop><d:current-user-principal/></d:prop></d:propfind>
             """;
-        var doc = await SendAsync(http, PropFind, a.BaseUrl, principalBody, 0, ct);
+        var doc = await SendAsync(http, PropFind, a.BaseUrl, principalBody, 0, ct).ConfigureAwait(false);
         var principal = doc.Descendants(D + "current-user-principal").Descendants(D + "href").FirstOrDefault()?.Value
             ?? throw new CalDavException("cal.err.auth");
 
         var homeBody = $"""
             <d:propfind xmlns:d="DAV:" xmlns:c="{C}"><d:prop><c:calendar-home-set/></d:prop></d:propfind>
             """;
-        var homeDoc = await SendAsync(http, PropFind, Absolute(a.BaseUrl, principal), homeBody, 0, ct);
+        var homeDoc = await SendAsync(http, PropFind, Absolute(a.BaseUrl, principal), homeBody, 0, ct).ConfigureAwait(false);
         var home = homeDoc.Descendants(C + "calendar-home-set").Descendants(D + "href").FirstOrDefault()?.Value
             ?? throw new CalDavException("cal.err.noHome");
 
@@ -108,8 +129,8 @@ public static class CalDav
     /// <summary>Liste les calendriers d'événements (on laisse de côté les rappels, les carnets d'adresses…).</summary>
     public static async Task<List<RemoteCalendar>> ListAsync(CalendarAccount a, CancellationToken ct)
     {
-        var home = a.HomeUrl ?? await FindHomeAsync(a, ct);
-        using var http = Client(a);
+        var home = a.HomeUrl ?? await FindHomeAsync(a, ct).ConfigureAwait(false);
+        var http = Client(a);
         var body = $"""
             <d:propfind xmlns:d="DAV:" xmlns:c="{C}" xmlns:a="{A}">
               <d:prop>
@@ -119,7 +140,7 @@ public static class CalDav
               </d:prop>
             </d:propfind>
             """;
-        var doc = await SendAsync(http, PropFind, home, body, 1, ct);
+        var doc = await SendAsync(http, PropFind, home, body, 1, ct).ConfigureAwait(false);
 
         var list = new List<RemoteCalendar>();
         foreach (var response in doc.Descendants(D + "response"))
@@ -152,7 +173,7 @@ public static class CalDav
     /// </summary>
     public static async Task<List<PlanTask>> FetchAsync(CalendarAccount a, string calendarHref, DateOnly from, DateOnly to, CancellationToken ct)
     {
-        using var http = Client(a);
+        var http = Client(a);
         string Utc(DateOnly d) => d.ToDateTime(TimeOnly.MinValue).ToUniversalTime().ToString("yyyyMMdd'T'HHmmss'Z'");
 
         string Query(bool expand) => $"""
@@ -171,20 +192,38 @@ public static class CalDav
             </c:calendar-query>
             """;
 
-        var tasks = await RunQueryAsync(http, calendarHref, Query(expand: true), ct);
-        if (tasks.Count > 0) return Within(tasks, from, to);
+        var tasks = await RunQueryAsync(http, calendarHref, Query(expand: true), ct).ConfigureAwait(false);
+        if (tasks.Count > 0)
+        {
+            lock (ConfirmedEmpty) ConfirmedEmpty.Remove(calendarHref);
+            return Within(tasks, from, to);
+        }
+
+        // Déjà vu vide aussi sans « expand » il y a moins d'une heure : un calendrier vide le reste,
+        // inutile de poser la question deux fois à chaque synchro.
+        lock (ConfirmedEmpty)
+            if (ConfirmedEmpty.TryGetValue(calendarHref, out var seen) && DateTime.Now - seen < TimeSpan.FromHours(1))
+                return [];
 
         // Certains serveurs renvoient une réponse vide quand on leur demande de développer les
         // répétitions. On repose alors la même question sans « expand » : les événements simples
         // reviennent, et une répétition revient au moins une fois au lieu de disparaître.
         CalDavLog.Line("  aucun résultat avec expand, nouvelle tentative sans");
-        tasks = await RunQueryAsync(http, calendarHref, Query(expand: false), ct);
+        tasks = await RunQueryAsync(http, calendarHref, Query(expand: false), ct).ConfigureAwait(false);
+        lock (ConfirmedEmpty)
+        {
+            if (tasks.Count == 0) ConfirmedEmpty[calendarHref] = DateTime.Now;
+            else ConfirmedEmpty.Remove(calendarHref);
+        }
         return Within(tasks, from, to);
     }
 
+    /// <summary>Calendriers vus vides avec et sans « expand », et quand.</summary>
+    private static readonly Dictionary<string, DateTime> ConfirmedEmpty = new();
+
     private static async Task<List<PlanTask>> RunQueryAsync(HttpClient http, string calendarHref, string body, CancellationToken ct)
     {
-        var doc = await SendAsync(http, Report, calendarHref, body, 1, ct);
+        var doc = await SendAsync(http, Report, calendarHref, body, 1, ct).ConfigureAwait(false);
         var tasks = new List<PlanTask>();
         foreach (var data in doc.Descendants(C + "calendar-data"))
         {
@@ -217,12 +256,12 @@ public static class CalDav
     /// </summary>
     public static async Task<string> EnsureOwnCalendarAsync(CalendarAccount a, CancellationToken ct)
     {
-        var existing = (await ListAsync(a, ct)).FirstOrDefault(c => c.Name == OwnCalendarName);
+        var existing = (await ListAsync(a, ct).ConfigureAwait(false)).FirstOrDefault(c => c.Name == OwnCalendarName);
         if (existing != null) return existing.Href;
 
-        var home = a.HomeUrl ?? await FindHomeAsync(a, ct);
+        var home = a.HomeUrl ?? await FindHomeAsync(a, ct).ConfigureAwait(false);
         var url = home.TrimEnd('/') + "/kairn-" + Guid.NewGuid().ToString("N")[..8] + "/";
-        using var http = Client(a);
+        var http = Client(a);
         var body = $"""
             <c:mkcalendar xmlns:d="DAV:" xmlns:c="{C}">
               <d:set><d:prop>
@@ -232,7 +271,7 @@ public static class CalDav
             </c:mkcalendar>
             """;
         using var req = new HttpRequestMessage(MkCalendar, url) { Content = new StringContent(body, Encoding.UTF8, "application/xml") };
-        using var res = await http.SendAsync(req, ct);
+        using var res = await http.SendAsync(req, ct).ConfigureAwait(false);
         if (!res.IsSuccessStatusCode) throw new CalDavException("cal.err.create", $"{(int)res.StatusCode} {res.ReasonPhrase}");
         return url;
     }
@@ -243,7 +282,7 @@ public static class CalDav
     /// <summary>Dépose (ou met à jour) une séance dans le calendrier « Kairn ».</summary>
     public static async Task PutAsync(CalendarAccount a, string calendarHref, PlanTask t, CancellationToken ct)
     {
-        using var http = Client(a);
+        var http = Client(a);
         var uid = OwnUid(t);
         var url = calendarHref.TrimEnd('/') + "/" + Uri.EscapeDataString(uid) + ".ics";
         using var req = new HttpRequestMessage(HttpMethod.Put, url)
@@ -251,11 +290,11 @@ public static class CalDav
             Content = new StringContent(IcsService.EventText(t, uid), Encoding.UTF8)
         };
         req.Content.Headers.ContentType = new MediaTypeHeaderValue("text/calendar") { CharSet = "utf-8" };
-        using var res = await http.SendAsync(req, ct);
+        using var res = await http.SendAsync(req, ct).ConfigureAwait(false);
         CalDavLog.Line($"PUT {uid} -> {(int)res.StatusCode} {res.ReasonPhrase}");
         if (!res.IsSuccessStatusCode)
         {
-            CalDavLog.Line("  corps : " + Snippet(await res.Content.ReadAsStringAsync(ct)));
+            CalDavLog.Line("  corps : " + Snippet(await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false)));
             throw new CalDavException("cal.err.write", $"{(int)res.StatusCode} {res.ReasonPhrase}");
         }
     }
@@ -263,9 +302,10 @@ public static class CalDav
     /// <summary>Retire une séance que Kairn avait déposée (et elle seule).</summary>
     public static async Task DeleteAsync(CalendarAccount a, string calendarHref, string uid, CancellationToken ct)
     {
-        using var http = Client(a);
+        var http = Client(a);
         var url = calendarHref.TrimEnd('/') + "/" + Uri.EscapeDataString(uid) + ".ics";
-        using var res = await http.SendAsync(new HttpRequestMessage(HttpMethod.Delete, url), ct);
+        using var req = new HttpRequestMessage(HttpMethod.Delete, url);
+        using var res = await http.SendAsync(req, ct).ConfigureAwait(false);
         // Déjà disparu côté serveur : c'est le résultat voulu, pas une erreur.
         if (!res.IsSuccessStatusCode && res.StatusCode != HttpStatusCode.NotFound)
             throw new CalDavException("cal.err.write", $"{(int)res.StatusCode} {res.ReasonPhrase}");
