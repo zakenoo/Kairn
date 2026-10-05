@@ -301,7 +301,7 @@ public partial class LibraryView : UserControl, IRefreshable
         Uri.TryCreate(s, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps);
 
     /// <summary>Titre lisible sans aller sur Internet (aucune requête réseau).</summary>
-    private static string LinkTitle(string url)
+    internal static string LinkTitle(string url)
     {
         var u = new Uri(url);
         var host = u.Host.Replace("www.", "");

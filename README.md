@@ -159,9 +159,10 @@ Kairn has **no account, no telemetry, no analytics, no crash reporting and no ad
 | **Online AI mode** | Only if you add an API key *and* choose “Online” for a goal | Your goal and your answers to the assistant's questions. **Never your calendar, notes, library or mail.** | The provider you configured (Anthropic, OpenAI…) |
 | **Update check** | Only if enabled, once a day, or when you click *Check now* | A standard request asking for the latest version number | GitHub |
 | **Website icons** | Once per website, when you add it to your work tools | Nothing about you: a plain request for the site's icon, without cookies | That website only, never a third-party icon service |
+| **Link previews** | Once per link, when you open a library category that contains it | Nothing about you: a plain request for the page and the preview image it announces, without cookies | That website only, never a third-party preview service |
 | **Links you open** | When you click one | A normal visit in your browser | That website |
 
-**Where your data lives:** `%AppData%\Kairn`, as readable JSON files (`data.json`, `settings.json`) plus a `library` folder for your files. A `cache` folder keeps thumbnails and icons; you can delete it at any time. Back it up or move it to another PC by copying that folder.
+**Where your data lives:** `%AppData%\Kairn`, as readable JSON files (`data.json`, `settings.json`) plus a `library` folder for your files. A `cache` folder keeps thumbnails, link previews and icons; you can delete it at any time. Back it up or move it to another PC by copying that folder.
 
 **Secrets are encrypted.** Your mail password, your calendar password and your API key are encrypted with Windows DPAPI: only your Windows account, on this PC, can decrypt them. (It also means you'll re-enter them after moving to a new PC.)
 

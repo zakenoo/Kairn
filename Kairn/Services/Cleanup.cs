@@ -22,13 +22,15 @@ public static class Cleanup
         {
             timer.Stop();
             // Relevé ici, sur le fil de l'interface : les données ne se lisent pas depuis un autre fil.
-            var images = Storage.Data.Categories.SelectMany(c => c.Items)
-                .Where(i => i.Kind == ResourceKind.Image).Select(i => i.Id).ToHashSet();
+            var items = Storage.Data.Categories.SelectMany(c => c.Items).ToList();
+            var images = items.Where(i => i.Kind == ResourceKind.Image).Select(i => i.Id).ToHashSet();
+            var links = items.Where(i => i.Kind == ResourceKind.Link).Select(i => i.Id).ToHashSet();
             Task.Run(() =>
             {
                 DownloadedSetups();
                 OldExtractions();
                 Thumbnails.Sweep(images);
+                LinkPreviews.Sweep(links);
             });
         };
         timer.Start();

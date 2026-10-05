@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.IO;
 using System.Windows.Media.Imaging;
 
@@ -76,11 +76,25 @@ public static class Thumbnails
         try
         {
             using var fs = File.OpenRead(file);
-            var frame = BitmapFrame.Create(fs, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
-            frame.Freeze();
-            return frame;
+            return Read(fs);
         }
         catch { return null; }
+    }
+
+    /// <summary>
+    /// Image lue entièrement et figée, utilisable depuis n'importe quel fil. Pas BitmapFrame.Create : son décodeur reste
+    /// attaché au fil qui l'a lu, et l'interface refusait ensuite d'afficher la miniature relue depuis le cache.
+    /// </summary>
+    public static BitmapSource Read(Stream stream, int decodeWidth = 0)
+    {
+        var img = new BitmapImage();
+        img.BeginInit();
+        img.StreamSource = stream; // sans IgnoreImageCache : avec un flux (pas d'adresse), WPF plante en le demandant
+        if (decodeWidth > 0) img.DecodePixelWidth = decodeWidth;
+        img.CacheOption = BitmapCacheOption.OnLoad;
+        img.EndInit();
+        img.Freeze();
+        return img;
     }
 
     private static void Save(BitmapSource img, string itemId, string file)
