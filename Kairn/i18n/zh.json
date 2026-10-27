@@ -714,5 +714,13 @@
   "set.cal.log": "查看同步日志",
   "set.cal.log.empty": "日志是空的：先同步一次。"
   ,
-  "set.cal.idle": "账户已连接，但还没有任何内容在同步：在下面至少勾选一个日历才能看到你的日程；想在 iPhone 上看到任务，请打开发送开关。"
+  "set.cal.idle": "账户已连接，但还没有任何内容在同步：在下面至少勾选一个日历才能看到你的日程；想在 iPhone 上看到任务，请打开发送开关。",
+  "today.earlier.title": "原定更早",
+  "today.earlier.sub": "没关系，今天还在继续。现在开始一件，或者留到以后。",
+  "today.earlier.start": "现在开始",
+  "today.earlier.later": "稍后",
+  "today.earlier.summary.one": "有 {0} 项任务原定更早",
+  "today.earlier.summary.other": "有 {0} 项任务原定更早",
+  "today.earlier.show": "查看列表",
+  "today.earlier.hide": "收起"
 }

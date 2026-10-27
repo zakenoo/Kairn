@@ -714,5 +714,13 @@
   "set.cal.log": "Lihat log sinkronisasi",
   "set.cal.log.empty": "Log-nya kosong: jalankan sinkronisasi dulu."
   ,
-  "set.cal.idle": "Akunmu sudah terhubung, tapi belum ada yang disinkronkan: centang minimal satu kalender di bawah untuk melihat janji temumu, dan nyalakan pengiriman kalau mau tugasmu ada di iPhone."
+  "set.cal.idle": "Akunmu sudah terhubung, tapi belum ada yang disinkronkan: centang minimal satu kalender di bawah untuk melihat janji temumu, dan nyalakan pengiriman kalau mau tugasmu ada di iPhone.",
+  "today.earlier.title": "Direncanakan lebih awal",
+  "today.earlier.sub": "Tidak apa-apa, hari masih berjalan. Mulai satu sekarang, atau tunda sampai nanti.",
+  "today.earlier.start": "Mulai sekarang",
+  "today.earlier.later": "Nanti",
+  "today.earlier.summary.one": "{0} tugas direncanakan lebih awal",
+  "today.earlier.summary.other": "{0} tugas direncanakan lebih awal",
+  "today.earlier.show": "Lihat daftar",
+  "today.earlier.hide": "Sembunyikan"
 }

@@ -714,5 +714,13 @@
   "set.cal.log": "Open the sync log",
   "set.cal.log.empty": "The log is empty: run a sync first."
   ,
-  "set.cal.idle": "Your account is linked, but nothing is syncing yet: tick at least one calendar below to see your appointments, and turn on sending if you want your tasks on your iPhone."
+  "set.cal.idle": "Your account is linked, but nothing is syncing yet: tick at least one calendar below to see your appointments, and turn on sending if you want your tasks on your iPhone.",
+  "today.earlier.title": "Planned earlier",
+  "today.earlier.sub": "No worries, the day goes on. Start one now, or leave it for later.",
+  "today.earlier.start": "Start now",
+  "today.earlier.later": "Later",
+  "today.earlier.summary.one": "{0} task was planned earlier",
+  "today.earlier.summary.other": "{0} tasks were planned earlier",
+  "today.earlier.show": "Show list",
+  "today.earlier.hide": "Hide"
 }

@@ -137,6 +137,57 @@ public partial class TodayView : UserControl, IRefreshable
         CarryCard.Visibility = !focus && _carried.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         // L'essentiel reste visible même en focus : c'est justement ce qu'on a décidé de ne pas perdre de vue.
         LayoutSide(Layout.ActualWidth);
+        UpdateEarlier(DateTime.Now.TimeOfDay);
+    }
+
+    // ===================== Prévu plus tôt =====================
+
+    private string? _earlierKey;
+    private bool _earlierExpanded;
+
+    /// <summary>
+    /// Ce dont l'heure est passée sans que ce soit fait : la journée a glissé (réveil tardif, imprévu), et on le voit au lieu de le deviner.
+    /// Une ou deux tâches se montrent une par une ; au-delà, une seule ligne qui ouvre la liste, pour ne pas faire un mur.
+    /// Rien n'est compté ni reproché : elles quittent la carte dès qu'on les fait, les décale ou les remet à plus tard.
+    /// </summary>
+    private void UpdateEarlier(TimeSpan now)
+    {
+        // Un rendez-vous iCloud ne se coche pas, et une tâche qui passe minuit n'a pas fini son créneau.
+        var earlier = _tasks.Where(x => !x.Done && !x.IsBreak && !x.IsExternal && x.End > x.Start && x.End <= now).ToList();
+        bool show = earlier.Count > 0 && !Storage.Settings.FocusOnly;
+        EarlierCard.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        if (!show) return;
+
+        bool many = earlier.Count > 2;
+        EarlierSummary.Visibility = many ? Visibility.Visible : Visibility.Collapsed;
+        EarlierList.Visibility = !many || _earlierExpanded ? Visibility.Visible : Visibility.Collapsed;
+        if (many)
+        {
+            EarlierSummaryText.Text = L.P("today.earlier.summary", earlier.Count);
+            EarlierToggle.Content = L.T(_earlierExpanded ? "today.earlier.hide" : "today.earlier.show");
+        }
+
+        // La liste n'est refaite que si elle a changé : cette méthode passe chaque seconde.
+        var key = string.Join(',', earlier.Select(x => x.Id));
+        if (key == _earlierKey) return;
+        _earlierKey = key;
+        EarlierList.ItemsSource = earlier;
+    }
+
+    private void EarlierToggle_Click(object sender, RoutedEventArgs e)
+    {
+        _earlierExpanded = !_earlierExpanded;
+        UpdateEarlier(DateTime.Now.TimeOfDay);
+    }
+
+    private void EarlierStart_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: PlanTask t }) StartNow(t);
+    }
+
+    private void EarlierLater_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: PlanTask t }) Postponed(CarryOver.Postpone(t), 1);
     }
 
     private void FocusToggle_Click(object sender, RoutedEventArgs e)
@@ -162,6 +213,7 @@ public partial class TodayView : UserControl, IRefreshable
             if (inSlot && (current is null || (current.Done && !task.Done))) current = task;
         }
         foreach (var task in _tasks) task.IsCurrent = ReferenceEquals(task, current);
+        UpdateEarlier(t);
         var next = _tasks.FirstOrDefault(x => x.Start > t);
 
         if (_tasks.Count == 0) { NowCard.Visibility = Visibility.Collapsed; UpdatePulse(); return; }
@@ -441,16 +493,22 @@ public partial class TodayView : UserControl, IRefreshable
     private void NowNext_Click(object sender, RoutedEventArgs e)
     {
         if (NowNext.Tag is not PlanTask next || next.Done || next.IsExternal) return;
+        StartNow(next);
+    }
+
+    /// <summary>La tâche commence maintenant, avec la même durée. Sert à « Commencer la suivante » et à « Je m'y mets ».</summary>
+    private void StartNow(PlanTask task)
+    {
         var now = DateTime.Now;
-        var length = next.Duration;
+        var length = task.Duration;
         var start = new TimeSpan(now.Hour, now.Minute, 0);
         var end = start + length;
         if (end.TotalHours >= 24) end -= TimeSpan.FromDays(1); // passe minuit
-        next.Start = start;
-        next.End = end;
-        next.CarriedFrom = null;
+        task.Start = start;
+        task.End = end;
+        task.CarriedFrom = null;
         // Lancée à la main à l'instant : pas de rappel « c'est l'heure » dans la foulée.
-        Reminders.Mute(next, now);
+        Reminders.Mute(task, now);
         Storage.Save();
         _shown = null;
         Refresh(); // l'ordre du programme change

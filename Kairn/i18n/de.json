@@ -714,5 +714,13 @@
   "set.cal.log": "Sync-Protokoll öffnen",
   "set.cal.log.empty": "Das Protokoll ist leer: synchronisiere zuerst einmal."
   ,
-  "set.cal.idle": "Dein Konto ist verbunden, aber es wird noch nichts übertragen: Kreuze unten mindestens einen Kalender an, um deine Termine zu sehen, und schalte das Senden ein, wenn du deine Aufgaben auf dem iPhone willst."
+  "set.cal.idle": "Dein Konto ist verbunden, aber es wird noch nichts übertragen: Kreuze unten mindestens einen Kalender an, um deine Termine zu sehen, und schalte das Senden ein, wenn du deine Aufgaben auf dem iPhone willst.",
+  "today.earlier.title": "Früher geplant",
+  "today.earlier.sub": "Nicht schlimm, der Tag geht weiter. Fang jetzt mit einer an oder schieb sie auf später.",
+  "today.earlier.start": "Jetzt anfangen",
+  "today.earlier.later": "Später",
+  "today.earlier.summary.one": "{0} Aufgabe war früher geplant",
+  "today.earlier.summary.other": "{0} Aufgaben waren früher geplant",
+  "today.earlier.show": "Liste zeigen",
+  "today.earlier.hide": "Ausblenden"
 }

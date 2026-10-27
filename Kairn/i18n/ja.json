@@ -714,5 +714,13 @@
   "set.cal.log": "同期ログを開く",
   "set.cal.log.empty": "ログは空です。先に一度同期してください。"
   ,
-  "set.cal.idle": "アカウントはつながっていますが、まだ何も同期されていません。予定を見るには下で少なくとも1つカレンダーにチェックを入れ、iPhone でタスクを見たいなら送信をオンにしてください。"
+  "set.cal.idle": "アカウントはつながっていますが、まだ何も同期されていません。予定を見るには下で少なくとも1つカレンダーにチェックを入れ、iPhone でタスクを見たいなら送信をオンにしてください。",
+  "today.earlier.title": "先に予定していたこと",
+  "today.earlier.sub": "気にしなくて大丈夫。一日はまだ続きます。どれかを今始めても、あとに回してもOK。",
+  "today.earlier.start": "今から始める",
+  "today.earlier.later": "あとで",
+  "today.earlier.summary.one": "先に予定していたことが{0}件あります",
+  "today.earlier.summary.other": "先に予定していたことが{0}件あります",
+  "today.earlier.show": "一覧を見る",
+  "today.earlier.hide": "閉じる"
 }

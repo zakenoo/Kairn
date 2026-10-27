@@ -21,6 +21,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- ===== En-tête ===== -->
@@ -232,8 +233,55 @@
                 </StackPanel>
             </Border>
 
+            <!-- ===== Prévu plus tôt : ce dont l'heure est passée sans avoir été fait ===== -->
+            <Border x:Name="EarlierCard" Grid.Row="3" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#x2615;" FontFamily="Segoe UI Emoji" FontSize="17" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{l:T today.earlier.title}" Style="{StaticResource H2}" FontSize="16"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Subtle}" Margin="0,4,0,12" Text="{l:T today.earlier.sub}"/>
+                    <DockPanel x:Name="EarlierSummary" Margin="0,0,0,6" Visibility="Collapsed">
+                        <Button x:Name="EarlierToggle" DockPanel.Dock="Right" Style="{StaticResource Ghost}" Padding="10,6" Click="EarlierToggle_Click"/>
+                        <TextBlock x:Name="EarlierSummaryText" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    </DockPanel>
+                    <ItemsControl x:Name="EarlierList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{DynamicResource Surface2Brush}" CornerRadius="{DynamicResource RadiusSmall}"
+                                        Padding="14,10" Margin="0,0,0,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox Style="{StaticResource RoundCheck}" IsChecked="{Binding Done}" VerticalAlignment="Center"
+                                                  Click="Check_Click" Tag="{Binding}" Margin="0,0,14,0"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Emoji}" FontFamily="Segoe UI Emoji" FontSize="14" Margin="0,0,8,0"
+                                                           VerticalAlignment="Center"
+                                                           Visibility="{Binding HasEmoji, Converter={StaticResource BoolToVis}}"/>
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding TimeRange}" FontSize="12" Foreground="{DynamicResource SubtleBrush}" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Style="{StaticResource Primary}" Padding="10,6" Margin="8,0,0,0" Tag="{Binding}"
+                                                Click="EarlierStart_Click" Content="{l:T today.earlier.start}"/>
+                                        <Button Grid.Column="3" Style="{StaticResource Ghost}" Padding="10,6" Margin="6,0,0,0" Tag="{Binding}"
+                                                Click="EarlierLater_Click" Content="{l:T today.earlier.later}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <!-- ===== À reprendre : ce qui n'a pas pu être fini avant ===== -->
-            <Border x:Name="CarryCard" Grid.Row="3" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed">
+            <Border x:Name="CarryCard" Grid.Row="4" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource Icon}" Text="&#xE72A;" Foreground="{DynamicResource AccentBrush}" Margin="0,0,10,0"/>
@@ -280,7 +328,7 @@
             </Border>
 
             <!-- ===== Programme du jour ===== -->
-            <DockPanel Grid.Row="4" Margin="0,0,0,12" x:Name="ListHeader">
+            <DockPanel Grid.Row="5" Margin="0,0,0,12" x:Name="ListHeader">
                 <TextBlock x:Name="Feedback" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="0,0,12,0"
                            Foreground="{DynamicResource AccentBrush}" FontSize="13"/>
                 <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Click="Plan_Click" Padding="10,6">
@@ -292,7 +340,7 @@
                 <TextBlock Text="{l:T today.program}" Style="{StaticResource H2}" VerticalAlignment="Center"/>
             </DockPanel>
 
-            <ItemsControl x:Name="TaskList" Grid.Row="5" Focusable="False">
+            <ItemsControl x:Name="TaskList" Grid.Row="6" Focusable="False">
                 <ItemsControl.GroupStyle>
                     <GroupStyle>
                         <GroupStyle.HeaderTemplate>

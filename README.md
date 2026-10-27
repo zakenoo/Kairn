@@ -39,6 +39,8 @@ There is also one thing Kairn deliberately does *not* do: it never asks you to s
 ### Today
 The task in progress with a live countdown, what comes next, and your whole day at a glance. Links attached to a task (a Figma file, a YouTube tutorial, a document) get a one-click button when it's time, and can even open by themselves. Your work tools sit on the side, and your mail can stay out of sight during work blocks.
 
+**Planned earlier** shows what was meant to happen before now and didn't, for the mornings that slip away. One or two tasks are listed one by one, with *Start now* (the task begins at the current time, with the same length) and *Later* (it moves to “To pick up”). With more, you get a single line that opens the list. Nothing is counted against you, and a task leaves the card as soon as you tick it, start it or move it.
+
 **The essentials** holds the two or three things that really matter today, and nothing more. **Focus** hides everything else in one click: only the task you're on stays, and one click brings the rest back.
 
 ### Steps

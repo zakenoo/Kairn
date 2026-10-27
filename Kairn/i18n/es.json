@@ -714,5 +714,13 @@
   "set.cal.log": "Ver el registro de sincronización",
   "set.cal.log.empty": "El registro está vacío: lanza una sincronización primero."
   ,
-  "set.cal.idle": "Tu cuenta está vinculada, pero aún no circula nada: marca al menos un calendario abajo para ver tus citas, y activa el envío si quieres tus tareas en el iPhone."
+  "set.cal.idle": "Tu cuenta está vinculada, pero aún no circula nada: marca al menos un calendario abajo para ver tus citas, y activa el envío si quieres tus tareas en el iPhone.",
+  "today.earlier.title": "Previsto antes",
+  "today.earlier.sub": "Nada grave, el día sigue. Empieza una ahora o déjala para más tarde.",
+  "today.earlier.start": "Empiezo ya",
+  "today.earlier.later": "Más tarde",
+  "today.earlier.summary.one": "{0} tarea estaba prevista antes",
+  "today.earlier.summary.other": "{0} tareas estaban previstas antes",
+  "today.earlier.show": "Ver la lista",
+  "today.earlier.hide": "Ocultar"
 }
