@@ -205,6 +205,12 @@
                                    Text="{l:T remind.sub}"/>
                         <WrapPanel x:Name="EdReminders"/>
 
+                        <!-- Répéter : ce qui revient (médicaments, sport, ménage) se pose tout seul, sans série à garder -->
+                        <TextBlock Text="{l:T routine.title}" Style="{StaticResource Label}" Margin="0,10,0,6"/>
+                        <WrapPanel x:Name="EdRepeat"/>
+                        <TextBlock x:Name="EdRepeatInfo" Style="{StaticResource Subtle}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,6"
+                                   Visibility="Collapsed" Text="{l:T routine.info}"/>
+
                         <TextBlock Text="{l:T plan.ed.links}" Style="{StaticResource Label}" Margin="0,8,0,6"/>
                         <WrapPanel x:Name="EdLinks"/>
                         <DockPanel Margin="0,2,0,0">

@@ -22,6 +22,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- ===== En-tête ===== -->
@@ -59,8 +60,25 @@
                 </StackPanel>
             </Grid>
 
+            <!-- ===== Rituel du matin ou du soir : trente secondes, une seule carte, puis elle s'en va ===== -->
+            <Border x:Name="RitualCard" Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed"
+                    BorderBrush="{DynamicResource AccentSoftBrush}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="RitualIcon" FontFamily="Segoe UI Emoji" FontSize="17" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="RitualTitle" Style="{StaticResource H2}" FontSize="16"/>
+                    </StackPanel>
+                    <TextBlock x:Name="RitualText" Margin="0,8,0,0" TextWrapping="Wrap" FontSize="14"/>
+                    <TextBlock x:Name="RitualSub" Style="{StaticResource Subtle}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                        <Button x:Name="RitualMain" Style="{StaticResource Primary}" Click="RitualMain_Click"/>
+                        <Button x:Name="RitualClose" Style="{StaticResource Ghost}" Margin="8,0,0,0" Click="RitualClose_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- ===== Tâche en cours ===== -->
-            <Border x:Name="NowCard" Grid.Row="1" Style="{StaticResource Card}" Background="{DynamicResource ZoneNowCardBrush}" Padding="24,22" Margin="0,0,0,28"
+            <Border x:Name="NowCard" Grid.Row="2" Style="{StaticResource Card}" Background="{DynamicResource ZoneNowCardBrush}" Padding="24,22" Margin="0,0,0,28"
                     BorderBrush="{DynamicResource AccentBrush}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -171,7 +189,7 @@
             </Border>
 
             <!-- ===== État vide ===== -->
-            <Border x:Name="EmptyCard" Grid.Row="1" Style="{StaticResource Card}" Padding="32" Visibility="Collapsed" Margin="0,0,0,28">
+            <Border x:Name="EmptyCard" Grid.Row="2" Style="{StaticResource Card}" Padding="32" Visibility="Collapsed" Margin="0,0,0,28">
                 <StackPanel HorizontalAlignment="Center">
                     <TextBlock Text="{l:T today.empty.title}" Style="{StaticResource H2}" HorizontalAlignment="Center"/>
                     <TextBlock Style="{StaticResource Subtle}" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,8,0,18"
@@ -181,7 +199,7 @@
             </Border>
 
             <!-- ===== L'essentiel : deux ou trois choses, le reste peut attendre ===== -->
-            <Border x:Name="EssentialCard" Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed"
+            <Border x:Name="EssentialCard" Grid.Row="3" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed"
                     BorderBrush="{DynamicResource AccentSoftBrush}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
@@ -234,7 +252,7 @@
             </Border>
 
             <!-- ===== Prévu plus tôt : ce dont l'heure est passée sans avoir été fait ===== -->
-            <Border x:Name="EarlierCard" Grid.Row="3" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed">
+            <Border x:Name="EarlierCard" Grid.Row="4" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#x2615;" FontFamily="Segoe UI Emoji" FontSize="17" Margin="0,0,10,0" VerticalAlignment="Center"/>
@@ -277,11 +295,19 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <!-- La journée a glissé : un clic, et tout ce qui reste retrouve une place -->
+                    <Button Style="{StaticResource Primary}" HorizontalAlignment="Left" Margin="0,8,0,0" Click="Replan_Click"
+                            ToolTip="{l:T today.replan.tip}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE895;" FontSize="12" Margin="0,0,8,0"/>
+                            <TextBlock Text="{l:T today.replan}"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Border>
 
             <!-- ===== À reprendre : ce qui n'a pas pu être fini avant ===== -->
-            <Border x:Name="CarryCard" Grid.Row="4" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed">
+            <Border x:Name="CarryCard" Grid.Row="5" Style="{StaticResource Card}" Margin="0,0,0,28" Visibility="Collapsed">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource Icon}" Text="&#xE72A;" Foreground="{DynamicResource AccentBrush}" Margin="0,0,10,0"/>
@@ -328,7 +354,7 @@
             </Border>
 
             <!-- ===== Programme du jour ===== -->
-            <DockPanel Grid.Row="5" Margin="0,0,0,12" x:Name="ListHeader">
+            <DockPanel Grid.Row="6" Margin="0,0,0,12" x:Name="ListHeader">
                 <TextBlock x:Name="Feedback" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="0,0,12,0"
                            Foreground="{DynamicResource AccentBrush}" FontSize="13"/>
                 <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Click="Plan_Click" Padding="10,6">
@@ -340,7 +366,7 @@
                 <TextBlock Text="{l:T today.program}" Style="{StaticResource H2}" VerticalAlignment="Center"/>
             </DockPanel>
 
-            <ItemsControl x:Name="TaskList" Grid.Row="6" Focusable="False">
+            <ItemsControl x:Name="TaskList" Grid.Row="7" Focusable="False">
                 <ItemsControl.GroupStyle>
                     <GroupStyle>
                         <GroupStyle.HeaderTemplate>

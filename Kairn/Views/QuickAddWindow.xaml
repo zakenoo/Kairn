@@ -24,8 +24,9 @@
                            Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
             </StackPanel>
 
-            <TextBox x:Name="Box" FontSize="19" Padding="12,10" KeyDown="Box_KeyDown" TextChanged="Box_TextChanged"
-                     Tag="{l:T quick.placeholder}"/>
+            <!-- Maj+Entrée ou un collage de plusieurs lignes : une idée par ligne, pour vider sa tête d'un coup -->
+            <TextBox x:Name="Box" FontSize="19" Padding="12,10" PreviewKeyDown="Box_KeyDown" TextChanged="Box_TextChanged"
+                     Tag="{l:T quick.placeholder}" TextWrapping="Wrap" MaxHeight="220" VerticalScrollBarVisibility="Auto"/>
 
             <TextBlock x:Name="Preview" Margin="4,10,0,0" FontSize="12.5" Foreground="{DynamicResource AccentBrush}"
                        TextWrapping="Wrap" Visibility="Collapsed"/>

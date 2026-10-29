@@ -59,6 +59,7 @@ public partial class App : Application
         LibraryFiles.Sync(); // dossiers de la bibliothèque au nom des catégories (et anciens dossiers à identifiant convertis)
         Loc.Instance.Load(Storage.Settings.Language ?? Loc.SystemDefault());
         CarryOver.RollOver();
+        Routines.Materialize(); // les routines posent leurs quatre prochaines semaines
         ThemeService.Apply(Storage.Settings.Theme);
         StartupService.Apply(Storage.Settings.StartWithWindows);
 

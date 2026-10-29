@@ -56,6 +56,7 @@ public partial class SettingsView : UserControl, IRefreshable
 
         DoneSoundSwitch.IsChecked = S.DoneSound;
         CelebrateSwitch.IsChecked = S.Celebrate;
+        RitualsSwitch.IsChecked = S.Rituals;
         HotkeySwitch.IsChecked = S.QuickAddHotkey;
         UpdateHotkeyStatus();
     }
@@ -72,6 +73,12 @@ public partial class SettingsView : UserControl, IRefreshable
         S.Celebrate = CelebrateSwitch.IsChecked == true;
         Storage.SaveSettings();
         if (S.Celebrate) Celebrate.Confetti(CelebrateSwitch);
+    }
+
+    private void Rituals_Click(object sender, RoutedEventArgs e)
+    {
+        S.Rituals = RitualsSwitch.IsChecked == true;
+        Storage.SaveSettings();
     }
 
     private void Hotkey_Click(object sender, RoutedEventArgs e)

@@ -291,6 +291,7 @@ public partial class PlanningView : UserControl, IRefreshable
         BuildCategoryChips(EdCategories, "ed", t.CategoryId);
         BuildEmojiChips(t.Emoji);
         BuildReminderChips(t);
+        BuildRepeatChips(t);
         _editSteps = [.. t.Steps.Select(s => new SubTask { Id = s.Id, Title = s.Title, Done = s.Done })];
         EdSteps.ItemsSource = _editSteps;
         StepBox.Text = "";
@@ -343,6 +344,35 @@ public partial class PlanningView : UserControl, IRefreshable
             EdReminders.Children.Add(cb);
         }
     }
+
+    /// <summary>
+    /// Quatre réponses qui couvrent presque tout : jamais, tous les jours, en semaine, ce jour-là chaque semaine.
+    /// Une routine faite à d'autres jours (capture rapide « chaque lundi et jeudi ») garde sa propre pastille.
+    /// </summary>
+    private void BuildRepeatChips(PlanTask t)
+    {
+        EdRepeat.Children.Clear();
+        var current = Routines.Of(t)?.Days;
+        var options = new List<DayOfWeek[]?> { null, Routines.EveryDay, Routines.Weekdays, new[] { t.Date.DayOfWeek } };
+        if (current is { Count: > 0 } && !options.Any(o => o != null && Routines.Same(o, current))) options.Add([.. current]);
+
+        foreach (var days in options)
+        {
+            var rb = new RadioButton
+            {
+                Content = days is null ? L.T("routine.none") : Routines.Label(days),
+                Tag = days, GroupName = "edRepeat", Padding = new Thickness(0),
+                IsChecked = days is null ? current is null : current != null && Routines.Same(days, current)
+            };
+            rb.SetResourceReference(StyleProperty, "Chip");
+            rb.Checked += (_, _) => EdRepeatInfo.Visibility = t.RoutineId != null && rb.Tag != null ? Visibility.Visible : Visibility.Collapsed;
+            EdRepeat.Children.Add(rb);
+        }
+        EdRepeatInfo.Visibility = current != null ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private DayOfWeek[]? SelectedRepeat() =>
+        EdRepeat.Children.OfType<RadioButton>().FirstOrDefault(r => r.IsChecked == true)?.Tag as DayOfWeek[];
 
     public static string ReminderLabel(int minutes) =>
         minutes == 0 ? L.T("remind.onTime") : L.F("remind.before", PlanTask.FormatDuration(TimeSpan.FromMinutes(minutes)));
@@ -512,6 +542,13 @@ public partial class PlanningView : UserControl, IRefreshable
         _editing.AutoOpen = EdAutoOpen.IsChecked == true && _editLinks.Count > 0;
         _editing.Rhythm = rhythm;
         if (_isNew) Storage.Data.Tasks.Add(_editing);
+        var repeat = SelectedRepeat();
+        if (_editing.RoutineId is null)
+        {
+            if (repeat != null && !_editing.Floating && !_editing.IsExternal) Routines.Create(_editing, repeat);
+        }
+        else if (repeat is null) Routines.Stop(_editing);
+        else Routines.Apply(_editing, repeat);
         Storage.Save();
         CloseEditors();
         Refresh();

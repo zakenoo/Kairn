@@ -61,6 +61,8 @@
                     <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap" Text="{l:T set.doneSound.sub}"/>
                     <CheckBox x:Name="CelebrateSwitch" Style="{StaticResource Switch}" Margin="0,14,0,0" Content="{l:T set.celebrate}" Click="Celebrate_Click"/>
                     <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap" Text="{l:T set.celebrate.sub}"/>
+                    <CheckBox x:Name="RitualsSwitch" Style="{StaticResource Switch}" Margin="0,14,0,0" Content="{l:T set.rituals}" Click="Rituals_Click"/>
+                    <TextBlock Style="{StaticResource Subtle}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap" Text="{l:T set.rituals.sub}"/>
 
                     <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,14,0,14"/>
 

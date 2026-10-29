@@ -107,6 +107,8 @@ public class PlanTask : Observable
     public bool AutoOpen { get; set; }
     /// <summary>Séance créée par l'assistant pour cet objectif.</summary>
     public string? GoalId { get; set; }
+    /// <summary>Routine d'où vient cette occurrence (« tous les jours à 8h »). Null : tâche ponctuelle.</summary>
+    public string? RoutineId { get; set; }
     [JsonIgnore] public bool HasLinks => Links.Count > 0;
 
     private string? _rhythm;
@@ -221,6 +223,27 @@ public class PlanTask : Observable
         // Une copie repart avec toutes ses étapes à faire.
         Steps = [.. Steps.Select(s => new SubTask { Title = s.Title })]
     };
+}
+
+/// <summary>
+/// Une tâche qui revient (médicaments, sport, ménage…). Kairn en pose les occurrences quelques semaines à l'avance :
+/// un jour sauté ne laisse aucune trace, il n'y a ni série à garder ni retard qui s'accumule.
+/// </summary>
+public class Routine
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string Title { get; set; } = "";
+    public string Notes { get; set; } = "";
+    public string? Emoji { get; set; }
+    public string? CategoryId { get; set; }
+    public bool IsBreak { get; set; }
+    public TimeSpan Start { get; set; }
+    public TimeSpan End { get; set; }
+    public List<DayOfWeek> Days { get; set; } = [];
+    public List<int>? Reminders { get; set; }
+    public List<string> Steps { get; set; } = [];
+    /// <summary>Dernier jour pour lequel des occurrences ont été posées.</summary>
+    public DateOnly Through { get; set; }
 }
 
 /// <summary>Un lien attaché à une tâche : URL, chemin d'un programme / fichier, ou raccourci.</summary>
@@ -385,6 +408,12 @@ public class AppSettings
     /// <summary>Demander à GitHub s'il existe une nouvelle version (choisi pendant l'installation).</summary>
     public bool CheckUpdates { get; set; }
     public AssistantSettings Assistant { get; set; } = new();
+    /// <summary>Une carte le matin pour commencer, une le soir pour poser ce qui reste.</summary>
+    public bool Rituals { get; set; } = true;
+    /// <summary>Dernier jour où la carte du matin a été vue ou fermée.</summary>
+    public DateOnly MorningDone { get; set; }
+    /// <summary>Dernier jour où la carte du soir a été vue ou fermée.</summary>
+    public DateOnly EveningDone { get; set; }
 }
 
 /// <summary>Une app ajoutée à la main dans l'onglet Garde.</summary>
@@ -403,4 +432,5 @@ public class AppData
     public List<PlanTask> Tasks { get; set; } = [];
     public List<Category> Categories { get; set; } = [];
     public List<Goal> Goals { get; set; } = [];
+    public List<Routine> Routines { get; set; } = [];
 }

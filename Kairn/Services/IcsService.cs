@@ -94,6 +94,13 @@ public static class IcsService
         var body = t.Notes;
         if (t.HasSteps) body = (body.Length > 0 ? body + "\n\n" : "") + string.Join("\n", t.Steps.Select(s => (s.Done ? "☑ " : "☐ ") + s.Title));
         if (body.Length > 0) sb.Append(Fold("DESCRIPTION:" + Escape(body)));
+        // Les rappels de la tâche voyagent avec elle : l'iPhone prévient même quand Kairn est fermé.
+        foreach (var minutes in Reminders.For(t).Distinct().OrderByDescending(m => m))
+        {
+            sb.Append("BEGIN:VALARM\r\nACTION:DISPLAY\r\n");
+            sb.Append(Fold("DESCRIPTION:" + Escape(t.Title)));
+            sb.Append($"TRIGGER:-PT{Math.Max(0, minutes)}M\r\nEND:VALARM\r\n");
+        }
         sb.Append("END:VEVENT\r\nEND:VCALENDAR\r\n");
         return sb.ToString();
     }

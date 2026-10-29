@@ -81,7 +81,7 @@ public partial class TodayView : UserControl, IRefreshable
     public void Refresh()
     {
         var today = DateOnly.FromDateTime(DateTime.Now);
-        if (today != _day && _day != default) CarryOver.RollOver(); // minuit passé avec l'app ouverte
+        if (today != _day && _day != default) { CarryOver.RollOver(); Routines.Materialize(); } // minuit passé avec l'app ouverte
         _day = today;
 
         var all = Storage.TasksFor(_day).ToList();
@@ -118,6 +118,7 @@ public partial class TodayView : UserControl, IRefreshable
         UpdateStats();
         Tick();
         ApplyFocus();
+        UpdateRitual();
     }
 
     // ===================== Mode focus =====================
@@ -190,17 +191,32 @@ public partial class TodayView : UserControl, IRefreshable
         if (sender is FrameworkElement { Tag: PlanTask t }) Postponed(CarryOver.Postpone(t), 1);
     }
 
+    private void Replan_Click(object sender, RoutedEventArgs e)
+    {
+        var (placed, waiting, target) = CarryOver.Replan();
+        _shown = null;
+        Refresh();
+        var parts = new List<string>();
+        if (placed > 0) parts.Add(L.P("today.replan.placed", placed));
+        if (waiting > 0) parts.Add(L.P("today.replan.waiting", waiting, CarryOver.DayName(target)));
+        Feedback.Text = string.Join(" ", parts);
+        _feedbackTimer.Stop();
+        _feedbackTimer.Start();
+    }
+
     private void FocusToggle_Click(object sender, RoutedEventArgs e)
     {
         Storage.Settings.FocusOnly = FocusToggle.IsChecked == true;
         Storage.SaveSettings();
         ApplyFocus();
+        UpdateRitual();
     }
 
     private void Tick()
     {
         var now = DateTime.Now;
         if (DateOnly.FromDateTime(now) != _day) { Refresh(); return; }
+        if (now.Hour != _ritualHour) UpdateRitual(); // la carte du soir arrive à 20h, même la fenêtre ouverte
         if (FocusGuard.CurrentTask()?.Id != _mailBlockId) RefreshMail(); // début ou fin de bloc : les mails se masquent ou réapparaissent
         var t = now.TimeOfDay;
 
@@ -543,7 +559,7 @@ public partial class TodayView : UserControl, IRefreshable
         if (NowPostpone.Tag is PlanTask t) Postponed(CarryOver.Postpone(t), 1);
         else if (NowPostpone.Tag as string == "all")
         {
-            int n = _tasks.Count(x => !x.Done && !x.IsBreak);
+            int n = _tasks.Count(x => !x.Done && !x.IsBreak && !x.IsExternal && x.RoutineId is null);
             Postponed(CarryOver.PostponeRemaining(_day), n);
         }
     }

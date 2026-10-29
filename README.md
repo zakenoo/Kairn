@@ -41,6 +41,10 @@ The task in progress with a live countdown, what comes next, and your whole day 
 
 **Planned earlier** shows what was meant to happen before now and didn't, for the mornings that slip away. One or two tasks are listed one by one, with *Start now* (the task begins at the current time, with the same length) and *Later* (it moves to “To pick up”). With more, you get a single line that opens the list. Nothing is counted against you, and a task leaves the card as soon as you tick it, start it or move it.
 
+**Rearrange my day** sits under that card. One click and everything that slipped by gets a free slot later today, in the order you had planned, around what is already fixed (appointments included). What no longer fits waits in “To pick up”. No question to answer, at the moment you have the least energy to decide.
+
+**Morning and evening.** Before noon, a single card says where to start: the starred task, or the next one, with *Start now*. After 8 pm, another one shows the stones you added today and offers to set what's left aside for your next session, in one click. Each card shows once a day, and you can turn both off in Settings.
+
 **The essentials** holds the two or three things that really matter today, and nothing more. **Focus** hides everything else in one click: only the task you're on stays, and one click brings the rest back.
 
 ### Steps
@@ -66,11 +70,22 @@ Three ways to look at the same days, one click apart:
 
 **Drag a task** wherever it should go: onto another day in the calendar, onto another hour in the week, into another column on the board, or above or below another task to reorder the day. Reordering keeps the day's time slots exactly as you shaped them and just changes what happens when. No dialog, no error message, no guilt.
 
+### Routines
+Medication, sport, the dishes, the Sunday clean-up: in the task editor, *Repeat* offers *Every day*, *Weekdays* or *Every Monday* (the task's own day). Kairn lays out the next four weeks on its own and keeps going as days pass. Each occurrence is a normal task you can move, tick or delete on its own, and editing one updates the ones to come.
+
+There is no streak. A missed routine isn't carried over and doesn't pile up: tomorrow simply has its own.
+
 ### Reminders
 For a task, pick as many reminders as you need: an hour before, fifteen minutes before, on the hour. A quiet banner says what's coming, how long you have, and the first step to get going, with *On my way* and *In 10 min*. You can set the ones every new task gets in the settings.
 
+If you send your sessions to iCloud (see below), their reminders go with them, so your iPhone rings even when Kairn is closed.
+
 ### Jotting something down in two seconds
-**Ctrl + Alt + K**, anywhere in Windows: a single field appears, you type, you press Enter, it's gone. Without a time the task waits in “To pick up”; start with one (`2pm Study`) and it lands straight in your day. It's also in the notification-area menu. An idea that needs you to find a window, pick a day and type two times is an idea you've already lost.
+**Ctrl + Alt + K**, anywhere in Windows: a single field appears, you type, you press Enter, it's gone. Without a time the task waits in “To pick up”; with one (`2pm Study`, or `Study at 2pm`) it lands straight in your day.
+
+It also understands days and routines, with a preview before you press Enter: `tomorrow 2pm Dentist`, `Call mum friday`, `Report in 3 days`, `12/11 at 9am Interview`, `every monday 9am Gym`, `every day 8am 💊 Pills`, `weekdays 6pm Tidy up`. These words work in English, French, Spanish, German and Portuguese, and day names in your interface language. It all happens on your PC, without AI.
+
+To empty your head, paste several lines at once, or press Shift + Enter between ideas: each line becomes its own task. It's also in the notification-area menu. An idea that needs you to find a window, pick a day and type two times is an idea you've already lost.
 
 ### Work rhythm (Pomodoro & co)
 Long tasks split themselves into sessions and breaks, with no manual planning: Pomodoro 25/5 (with a long break every four sessions), Small steps 15/5, Focused 50/10, Deep work 90/20, or your own. Pick it per task, add `#pomodoro` or `#50/10` to a pasted line, or apply it automatically to every long task. A discreet banner (with an optional soft sound) announces each break and each restart, and the guard rests during breaks.
@@ -237,7 +252,9 @@ For **Google and Outlook**, it's `.ics` files (Planner → Import / Export): a o
 <details>
 <summary><b>Do my reminders work when Kairn is closed?</b></summary>
 
-No. Reminders are fired by Kairn itself, so it has to be running. That is what “start with Windows” and the notification area are for. Nothing is scheduled in Windows behind your back.
+No. On your PC, reminders are fired by Kairn itself, so it has to be running. That is what “start with Windows” and the notification area are for. Nothing is scheduled in Windows behind your back.
+
+If you link iCloud and turn on sending, each session goes up with its reminders, so your iPhone and your Mac remind you even when Kairn is closed.
 </details>
 
 <details>

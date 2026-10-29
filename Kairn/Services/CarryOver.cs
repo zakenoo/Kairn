@@ -40,7 +40,8 @@ public static class CarryOver
     public static DateOnly PostponeRemaining(DateOnly day)
     {
         var target = NextSessionDate(afterNow: true);
-        foreach (var t in Storage.Data.Tasks.Where(t => t.Date == day && !t.Done && !t.IsBreak && !t.IsExternal).ToList())
+        // Les routines restent où elles sont : demain a déjà la sienne.
+        foreach (var t in Storage.Data.Tasks.Where(t => t.Date == day && !t.Done && !t.IsBreak && !t.IsExternal && t.RoutineId is null).ToList())
             Move(t, target);
         Storage.Save();
         return target;
@@ -53,12 +54,71 @@ public static class CarryOver
     public static int RollOver()
     {
         var today = DateOnly.FromDateTime(DateTime.Now);
-        var pending = Storage.Data.Tasks.Where(t => t.Date < today && !t.Done && !t.IsBreak && !t.IsExternal).ToList();
+        // Une routine manquée ne s'accumule pas : demain revient tout seul, inutile d'y ajouter celle d'hier.
+        var pending = Storage.Data.Tasks.Where(t => t.Date < today && !t.Done && !t.IsBreak && !t.IsExternal && t.RoutineId is null).ToList();
         if (pending.Count == 0) return 0;
         var target = NextSessionDate(afterNow: false);
         foreach (var t in pending) Move(t, target);
         Storage.Save();
         return pending.Count;
+    }
+
+    /// <summary>
+    /// « Ma journée a dérapé » : ce dont l'heure est passée sans être fait retrouve un créneau libre plus tard aujourd'hui,
+    /// dans l'ordre prévu, sans toucher à ce qui est déjà calé (rendez-vous compris). Ce qui ne rentre plus attend
+    /// dans « À reprendre ». Aucune question : un seul clic, au moment où on a le moins d'énergie pour décider.
+    /// </summary>
+    public static (int Placed, int Waiting, DateOnly Target) Replan()
+    {
+        var now = DateTime.Now;
+        var today = DateOnly.FromDateTime(now);
+        var dayEnd = new TimeSpan(22, 30, 0);
+        var gap = TimeSpan.FromMinutes(5);
+        // Cinq minutes pour souffler avant de reprendre, sur un multiple de cinq.
+        var earliest = TimeSpan.FromMinutes(Math.Ceiling((now.TimeOfDay + gap).TotalMinutes / 5) * 5);
+
+        var day = Storage.Data.Tasks.Where(t => t.Date == today && !t.Floating).ToList();
+        var missed = day.Where(t => !t.Done && !t.IsBreak && !t.IsExternal && t.End > t.Start && t.End <= now.TimeOfDay)
+                        .OrderBy(t => t.Start).ToList();
+        if (missed.Count == 0) return (0, 0, today);
+
+        var busy = day.Except(missed)
+            .Where(t => t.End <= t.Start || t.End > now.TimeOfDay)
+            .Select(t => (From: t.Start, To: t.End > t.Start ? t.End : TimeSpan.FromHours(24)))
+            .ToList();
+
+        int placed = 0;
+        var waiting = new List<PlanTask>();
+        foreach (var t in missed)
+        {
+            var length = t.Duration;
+            TimeSpan? slot = null;
+            for (var s = earliest; s + length <= dayEnd; s += gap)
+            {
+                var e = s + length;
+                if (busy.Any(b => s < b.To + gap && e + gap > b.From)) continue;
+                slot = s;
+                break;
+            }
+            if (slot is { } start)
+            {
+                t.Start = start;
+                t.End = start + length;
+                t.CarriedFrom = null;
+                busy.Add((t.Start, t.End));
+                placed++;
+            }
+            else waiting.Add(t);
+        }
+
+        var target = today;
+        if (waiting.Count > 0)
+        {
+            target = NextSessionDate(afterNow: true);
+            foreach (var t in waiting) Move(t, target);
+        }
+        Storage.Save();
+        return (placed, waiting.Count, target);
     }
 
     private static void Move(PlanTask t, DateOnly target)

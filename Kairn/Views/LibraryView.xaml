@@ -72,13 +72,16 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel>
                             <TextBlock Text="{l:T lib.emoji}" Style="{StaticResource Label}"/>
-                            <TextBox x:Name="EdEmoji" FontFamily="Segoe UI Emoji" HorizontalContentAlignment="Center" MaxLength="4"/>
+                            <TextBox x:Name="EdEmoji" FontFamily="Segoe UI Emoji" HorizontalContentAlignment="Center" MaxLength="16"
+                                     TextChanged="EdEmoji_TextChanged" ToolTip="{l:T lib.emoji.tip}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="{l:T lib.name}" Style="{StaticResource Label}"/>
                             <TextBox x:Name="EdName"/>
                         </StackPanel>
                     </Grid>
+                    <!-- Un clic suffit : taper un emoji au clavier, personne ne sait le faire -->
+                    <WrapPanel x:Name="EdEmojiGrid" Margin="0,10,0,0"/>
                     <TextBlock Text="{l:T lib.color}" Style="{StaticResource Label}" Margin="0,14,0,6"/>
                     <WrapPanel x:Name="EdColors"/>
                     <TextBlock Text="{l:T lib.parent}" Style="{StaticResource Label}" Margin="0,8,0,6"/>

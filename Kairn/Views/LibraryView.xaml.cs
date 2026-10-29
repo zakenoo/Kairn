@@ -192,11 +192,49 @@ public partial class LibraryView : UserControl, IRefreshable
         if (_current is null) return;
         CatEditor.Visibility = Visibility.Visible;
         EdEmoji.Text = _current.Emoji;
+        BuildEmojiGrid();
         EdName.Text = _current.Name;
         _editColor = _current.Color;
         BuildColorSwatches();
         BuildParentChips();
         EdName.Focus();
+    }
+
+    /// <summary>De quoi reconnaître une catégorie d'un coup d'œil : études, travail, création, maison, santé, loisirs.</summary>
+    private static readonly string[] CategoryEmojis =
+    [
+        "📁", "📂", "📚", "📖", "📝", "🎓", "🧠", "💡", "🔬", "🧮",
+        "💼", "💻", "📊", "📈", "🗂️", "📌", "✉️", "📞", "🧾", "💰",
+        "🎨", "✏️", "🖌️", "📷", "🎬", "🎵", "🎸", "🎮", "🧩", "✨",
+        "🏠", "🧹", "🍳", "🛒", "🌱", "🐾", "🚗", "✈️", "🗺️", "🎁",
+        "🏃", "💪", "🧘", "💊", "❤️", "😴", "☀️", "🌙", "⭐", "🎯"
+    ];
+
+    private void BuildEmojiGrid()
+    {
+        EdEmojiGrid.Children.Clear();
+        var selected = EdEmoji.Text.Trim();
+        foreach (var e in CategoryEmojis)
+        {
+            var rb = new RadioButton
+            {
+                Content = new TextBlock { Text = e, FontFamily = new FontFamily("Segoe UI Emoji"), FontSize = 16 },
+                Tag = e, GroupName = "catEmoji", IsChecked = e == selected,
+                Margin = new Thickness(0, 0, 5, 5), Padding = new Thickness(0)
+            };
+            rb.SetResourceReference(StyleProperty, "Chip");
+            rb.Checked += (_, _) => { if (EdEmoji.Text != e) EdEmoji.Text = e; };
+            EdEmojiGrid.Children.Add(rb);
+        }
+    }
+
+    /// <summary>Un emoji tapé ou collé à la main : la grille suit (rien de coché s'il n'y est pas).</summary>
+    private void EdEmoji_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (EdEmojiGrid is null) return;
+        var text = EdEmoji.Text.Trim();
+        foreach (var rb in EdEmojiGrid.Children.OfType<RadioButton>())
+            if ((rb.IsChecked == true) != (rb.Tag as string == text)) rb.IsChecked = rb.Tag as string == text;
     }
 
     /// <summary>Où ranger la catégorie : principale, ou dans une autre (pas dans elle-même ni dans ses propres sous-catégories).</summary>
